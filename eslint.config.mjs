@@ -1,0 +1,69 @@
+// @ts-check
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
+import angularEslint from '@angular-eslint/eslint-plugin';
+import angularTemplateParser from '@angular-eslint/template-parser';
+import angularEslintTemplate from '@angular-eslint/eslint-plugin-template';
+import prettierConfig from 'eslint-config-prettier';
+import prettierPlugin from 'eslint-plugin-prettier';
+
+export default tseslint.config(
+  {
+    files: ['**/*.ts'],
+    extends: [
+      eslint.configs.recommended,
+      ...tseslint.configs.recommended,
+      ...tseslint.configs.stylistic,
+      prettierConfig,
+    ],
+    plugins: {
+      '@angular-eslint': angularEslint,
+      prettier: prettierPlugin,
+    },
+    rules: {
+      'prettier/prettier': 'error',
+      '@angular-eslint/directive-selector': [
+        'error',
+        {
+          type: 'attribute',
+          prefix: 'app',
+          style: 'camelCase',
+        },
+      ],
+      '@angular-eslint/component-selector': [
+        'error',
+        {
+          type: 'element',
+          prefix: 'app',
+          style: 'kebab-case',
+        },
+      ],
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+  {
+    files: ['**/*.html'],
+    languageOptions: {
+      parser: angularTemplateParser,
+    },
+    plugins: {
+      '@angular-eslint/template': angularEslintTemplate,
+    },
+    rules: {
+      '@angular-eslint/template/no-negated-async': 'error',
+      '@angular-eslint/template/use-track-by-function': 'error',
+      '@angular-eslint/template/accessibility-alt-text': 'error',
+      '@angular-eslint/template/accessibility-elements-content': 'error',
+      '@angular-eslint/template/accessibility-label-has-associated-control': 'error',
+      '@angular-eslint/template/click-events-have-key-events': 'error',
+      '@angular-eslint/template/mouse-events-have-key-events': 'error',
+    },
+  },
+);

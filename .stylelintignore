@@ -1,0 +1,21 @@
+# dependencies
+node_modules
+package-lock.json
+
+# production
+dist
+.angular
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*
+
+# coverage
+coverage
+
+# build artifacts
+*.js
+*.js.map
+*.d.ts
+*.d.ts.map

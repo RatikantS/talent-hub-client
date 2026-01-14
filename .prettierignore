@@ -1,0 +1,32 @@
+# dependencies
+node_modules
+package-lock.json
+
+# production
+dist
+.angular
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*.sublime-*
+
+# build artifacts
+*.js.map
+*.d.ts.map
+coverage
+
+# environment files
+.env
+.env.local
+.env.*.local
+
+# Angular specific
+.angular/cache
