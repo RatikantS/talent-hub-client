@@ -11,6 +11,10 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
+    "paths": {
+      "talent-hub-core": ["./libs/talent-hub-core/src/public-api.ts"],
+      "talent-hub-ui": ["./libs/talent-hub-ui/src/public-api.ts"]
+    },
     "module": "preserve"
   },
   "angularCompilerOptions": {
@@ -80,6 +84,18 @@
     },
     {
       "path": "./apps/talent-hub-report/tsconfig.spec.json"
+    },
+    {
+      "path": "./libs/talent-hub-core/tsconfig.lib.json"
+    },
+    {
+      "path": "./libs/talent-hub-core/tsconfig.spec.json"
+    },
+    {
+      "path": "./libs/talent-hub-ui/tsconfig.lib.json"
+    },
+    {
+      "path": "./libs/talent-hub-ui/tsconfig.spec.json"
     }
   ]
 }

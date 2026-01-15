@@ -1,0 +1,34 @@
+// ============================================================================
+// Talent Hub Shared Styles
+// ============================================================================
+// Main entry point for shared styles across all MFEs
+//
+// Usage in MFE apps:
+// @import 'talent-hub-ui/styles';
+
+// ----------------------------------------------------------------------------
+// Import Shared Styles
+// ----------------------------------------------------------------------------
+// Variables and configuration
+@import './variables';
+
+// Mixins
+@import './mixins';
+
+// Base styles
+@import './typography';
+@import './utilities';
+
+// ----------------------------------------------------------------------------
+// Global Styles
+// ----------------------------------------------------------------------------
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}

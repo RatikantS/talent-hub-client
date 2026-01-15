@@ -1124,6 +1124,58 @@
           "defaultConfiguration": "development"
         }
       }
+    },
+    "talent-hub-core": {
+      "projectType": "library",
+      "root": "libs/talent-hub-core",
+      "sourceRoot": "libs/talent-hub-core/src",
+      "prefix": "th",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "libs/talent-hub-core/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "libs/talent-hub-core/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "libs/talent-hub-core/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "talent-hub-ui": {
+      "projectType": "library",
+      "root": "libs/talent-hub-ui",
+      "sourceRoot": "libs/talent-hub-ui/src",
+      "prefix": "th",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "libs/talent-hub-ui/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "libs/talent-hub-ui/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "libs/talent-hub-ui/tsconfig.spec.json"
+          }
+        }
+      }
     }
   },
   "schematics": {
