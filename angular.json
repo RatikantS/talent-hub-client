@@ -5,5 +5,1148 @@
     "packageManager": "npm"
   },
   "newProjectRoot": "projects",
-  "projects": {}
+  "projects": {
+    "talent-hub-host": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "apps/talent-hub-host",
+      "sourceRoot": "apps/talent-hub-host/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {},
+          "configurations": {
+            "production": {
+              "target": "talent-hub-host:esbuild:production"
+            },
+            "development": {
+              "target": "talent-hub-host:esbuild:development",
+              "dev": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {
+            "target": "talent-hub-host:serve-original:development",
+            "rebuildDelay": 500,
+            "dev": true,
+            "cacheExternalArtifacts": false,
+            "port": 0
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        },
+        "esbuild": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/talent-hub-host/src/main.ts",
+            "tsConfig": "apps/talent-hub-host/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/talent-hub-host/public"
+              }
+            ],
+            "styles": ["apps/talent-hub-host/src/styles.scss"],
+            "polyfills": ["es-module-shims"]
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "apps/talent-hub-host/src/environments/environment.ts",
+                  "with": "apps/talent-hub-host/src/environments/environment.prod.ts"
+                }
+              ],
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-host/public"
+                },
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-host/src/mocks",
+                  "output": "/mocks"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve-original": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "talent-hub-host:esbuild:production"
+            },
+            "development": {
+              "buildTarget": "talent-hub-host:esbuild:development"
+            }
+          },
+          "defaultConfiguration": "development",
+          "options": {
+            "port": 4200
+          }
+        }
+      }
+    },
+    "talent-hub-user": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "apps/talent-hub-user",
+      "sourceRoot": "apps/talent-hub-user/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {},
+          "configurations": {
+            "production": {
+              "target": "talent-hub-user:esbuild:production"
+            },
+            "development": {
+              "target": "talent-hub-user:esbuild:development",
+              "dev": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {
+            "target": "talent-hub-user:serve-original:development",
+            "rebuildDelay": 500,
+            "dev": true,
+            "cacheExternalArtifacts": false,
+            "port": 0
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        },
+        "esbuild": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/talent-hub-user/src/main.ts",
+            "polyfills": ["es-module-shims"],
+            "tsConfig": "apps/talent-hub-user/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/talent-hub-user/public"
+              }
+            ],
+            "styles": ["apps/talent-hub-user/src/styles.scss"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "apps/talent-hub-user/src/environments/environment.ts",
+                  "with": "apps/talent-hub-user/src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-user/public"
+                },
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-user/src/mocks",
+                  "output": "/mocks"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve-original": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "talent-hub-user:build:development",
+            "port": 4201
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "talent-hub-user:esbuild:production"
+            },
+            "development": {
+              "buildTarget": "talent-hub-user:esbuild:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    },
+    "talent-hub-dashboard": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "apps/talent-hub-dashboard",
+      "sourceRoot": "apps/talent-hub-dashboard/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {},
+          "configurations": {
+            "production": {
+              "target": "talent-hub-dashboard:esbuild:production"
+            },
+            "development": {
+              "target": "talent-hub-dashboard:esbuild:development",
+              "dev": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {
+            "target": "talent-hub-dashboard:serve-original:development",
+            "rebuildDelay": 500,
+            "dev": true,
+            "cacheExternalArtifacts": false,
+            "port": 0
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        },
+        "esbuild": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/talent-hub-dashboard/src/main.ts",
+            "polyfills": ["es-module-shims"],
+            "tsConfig": "apps/talent-hub-dashboard/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/talent-hub-dashboard/public"
+              }
+            ],
+            "styles": ["apps/talent-hub-dashboard/src/styles.scss"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "apps/talent-hub-dashboard/src/environments/environment.ts",
+                  "with": "apps/talent-hub-dashboard/src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-dashboard/public"
+                },
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-dashboard/src/mocks",
+                  "output": "/mocks"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve-original": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "talent-hub-dashboard:build:development",
+            "port": 4202
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "talent-hub-dashboard:esbuild:production"
+            },
+            "development": {
+              "buildTarget": "talent-hub-dashboard:esbuild:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    },
+    "talent-hub-requisition": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "apps/talent-hub-requisition",
+      "sourceRoot": "apps/talent-hub-requisition/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {},
+          "configurations": {
+            "production": {
+              "target": "talent-hub-requisition:esbuild:production"
+            },
+            "development": {
+              "target": "talent-hub-requisition:esbuild:development",
+              "dev": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {
+            "target": "talent-hub-requisition:serve-original:development",
+            "rebuildDelay": 500,
+            "dev": true,
+            "cacheExternalArtifacts": false,
+            "port": 0
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        },
+        "esbuild": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/talent-hub-requisition/src/main.ts",
+            "polyfills": ["es-module-shims"],
+            "tsConfig": "apps/talent-hub-requisition/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/talent-hub-requisition/public"
+              }
+            ],
+            "styles": ["apps/talent-hub-requisition/src/styles.scss"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "apps/talent-hub-requisition/src/environments/environment.ts",
+                  "with": "apps/talent-hub-requisition/src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-requisition/public"
+                },
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-requisition/src/mocks",
+                  "output": "/mocks"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve-original": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "talent-hub-requisition:build:development",
+            "port": 4203
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "talent-hub-requisition:esbuild:production"
+            },
+            "development": {
+              "buildTarget": "talent-hub-requisition:esbuild:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    },
+    "talent-hub-interview": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "apps/talent-hub-interview",
+      "sourceRoot": "apps/talent-hub-interview/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {},
+          "configurations": {
+            "production": {
+              "target": "talent-hub-interview:esbuild:production"
+            },
+            "development": {
+              "target": "talent-hub-interview:esbuild:development",
+              "dev": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {
+            "target": "talent-hub-interview:serve-original:development",
+            "rebuildDelay": 500,
+            "dev": true,
+            "cacheExternalArtifacts": false,
+            "port": 0
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        },
+        "esbuild": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/talent-hub-interview/src/main.ts",
+            "polyfills": ["es-module-shims"],
+            "tsConfig": "apps/talent-hub-interview/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/talent-hub-interview/public"
+              }
+            ],
+            "styles": ["apps/talent-hub-interview/src/styles.scss"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "apps/talent-hub-interview/src/environments/environment.ts",
+                  "with": "apps/talent-hub-interview/src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-interview/public"
+                },
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-interview/src/mocks",
+                  "output": "/mocks"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve-original": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "talent-hub-interview:build:development",
+            "port": 4204
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "talent-hub-interview:esbuild:production"
+            },
+            "development": {
+              "buildTarget": "talent-hub-interview:esbuild:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    },
+    "talent-hub-candidate": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "apps/talent-hub-candidate",
+      "sourceRoot": "apps/talent-hub-candidate/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {},
+          "configurations": {
+            "production": {
+              "target": "talent-hub-candidate:esbuild:production"
+            },
+            "development": {
+              "target": "talent-hub-candidate:esbuild:development",
+              "dev": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {
+            "target": "talent-hub-candidate:serve-original:development",
+            "rebuildDelay": 500,
+            "dev": true,
+            "cacheExternalArtifacts": false,
+            "port": 0
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        },
+        "esbuild": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/talent-hub-candidate/src/main.ts",
+            "polyfills": ["es-module-shims"],
+            "tsConfig": "apps/talent-hub-candidate/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/talent-hub-candidate/public"
+              }
+            ],
+            "styles": ["apps/talent-hub-candidate/src/styles.scss"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "apps/talent-hub-candidate/src/environments/environment.ts",
+                  "with": "apps/talent-hub-candidate/src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-candidate/public"
+                },
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-candidate/src/mocks",
+                  "output": "/mocks"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve-original": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "talent-hub-candidate:build:development",
+            "port": 4205
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "talent-hub-candidate:esbuild:production"
+            },
+            "development": {
+              "buildTarget": "talent-hub-candidate:esbuild:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    },
+    "talent-hub-assessment": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "apps/talent-hub-assessment",
+      "sourceRoot": "apps/talent-hub-assessment/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {},
+          "configurations": {
+            "production": {
+              "target": "talent-hub-assessment:esbuild:production"
+            },
+            "development": {
+              "target": "talent-hub-assessment:esbuild:development",
+              "dev": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {
+            "target": "talent-hub-assessment:serve-original:development",
+            "rebuildDelay": 500,
+            "dev": true,
+            "cacheExternalArtifacts": false,
+            "port": 0
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        },
+        "esbuild": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/talent-hub-assessment/src/main.ts",
+            "polyfills": ["es-module-shims"],
+            "tsConfig": "apps/talent-hub-assessment/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/talent-hub-assessment/public"
+              }
+            ],
+            "styles": ["apps/talent-hub-assessment/src/styles.scss"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "apps/talent-hub-assessment/src/environments/environment.ts",
+                  "with": "apps/talent-hub-assessment/src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-assessment/public"
+                },
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-assessment/src/mocks",
+                  "output": "/mocks"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve-original": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "talent-hub-assessment:build:development",
+            "port": 4206
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "talent-hub-assessment:esbuild:production"
+            },
+            "development": {
+              "buildTarget": "talent-hub-assessment:esbuild:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    },
+    "talent-hub-onboarding": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "apps/talent-hub-onboarding",
+      "sourceRoot": "apps/talent-hub-onboarding/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {},
+          "configurations": {
+            "production": {
+              "target": "talent-hub-onboarding:esbuild:production"
+            },
+            "development": {
+              "target": "talent-hub-onboarding:esbuild:development",
+              "dev": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {
+            "target": "talent-hub-onboarding:serve-original:development",
+            "rebuildDelay": 500,
+            "dev": true,
+            "cacheExternalArtifacts": false,
+            "port": 0
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        },
+        "esbuild": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/talent-hub-onboarding/src/main.ts",
+            "polyfills": ["es-module-shims"],
+            "tsConfig": "apps/talent-hub-onboarding/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/talent-hub-onboarding/public"
+              }
+            ],
+            "styles": ["apps/talent-hub-onboarding/src/styles.scss"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "apps/talent-hub-onboarding/src/environments/environment.ts",
+                  "with": "apps/talent-hub-onboarding/src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-onboarding/public"
+                },
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-onboarding/src/mocks",
+                  "output": "/mocks"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve-original": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "talent-hub-onboarding:build:development",
+            "port": 4207
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "talent-hub-onboarding:esbuild:production"
+            },
+            "development": {
+              "buildTarget": "talent-hub-onboarding:esbuild:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    },
+    "talent-hub-audit": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "apps/talent-hub-audit",
+      "sourceRoot": "apps/talent-hub-audit/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {},
+          "configurations": {
+            "production": {
+              "target": "talent-hub-audit:esbuild:production"
+            },
+            "development": {
+              "target": "talent-hub-audit:esbuild:development",
+              "dev": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {
+            "target": "talent-hub-audit:serve-original:development",
+            "rebuildDelay": 500,
+            "dev": true,
+            "cacheExternalArtifacts": false,
+            "port": 0
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        },
+        "esbuild": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/talent-hub-audit/src/main.ts",
+            "polyfills": ["es-module-shims"],
+            "tsConfig": "apps/talent-hub-audit/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/talent-hub-audit/public"
+              }
+            ],
+            "styles": ["apps/talent-hub-audit/src/styles.scss"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "apps/talent-hub-audit/src/environments/environment.ts",
+                  "with": "apps/talent-hub-audit/src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-audit/public"
+                },
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-audit/src/mocks",
+                  "output": "/mocks"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve-original": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "talent-hub-audit:build:development",
+            "port": 4208
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "talent-hub-audit:esbuild:production"
+            },
+            "development": {
+              "buildTarget": "talent-hub-audit:esbuild:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    },
+    "talent-hub-report": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "apps/talent-hub-report",
+      "sourceRoot": "apps/talent-hub-report/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {},
+          "configurations": {
+            "production": {
+              "target": "talent-hub-report:esbuild:production"
+            },
+            "development": {
+              "target": "talent-hub-report:esbuild:development",
+              "dev": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {
+            "target": "talent-hub-report:serve-original:development",
+            "rebuildDelay": 500,
+            "dev": true,
+            "cacheExternalArtifacts": false,
+            "port": 0
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        },
+        "esbuild": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/talent-hub-report/src/main.ts",
+            "polyfills": ["es-module-shims"],
+            "tsConfig": "apps/talent-hub-report/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/talent-hub-report/public"
+              }
+            ],
+            "styles": ["apps/talent-hub-report/src/styles.scss"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "apps/talent-hub-report/src/environments/environment.ts",
+                  "with": "apps/talent-hub-report/src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-report/public"
+                },
+                {
+                  "glob": "**/*",
+                  "input": "apps/talent-hub-report/src/mocks",
+                  "output": "/mocks"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve-original": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "talent-hub-report:build:development",
+            "port": 4209
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "talent-hub-report:esbuild:production"
+            },
+            "development": {
+              "buildTarget": "talent-hub-report:esbuild:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    }
+  },
+  "schematics": {
+    "@schematics/angular:component": {
+      "type": "component"
+    },
+    "@schematics/angular:directive": {
+      "type": "directive"
+    },
+    "@schematics/angular:service": {
+      "type": "service"
+    },
+    "@schematics/angular:guard": {
+      "flat": true
+    },
+    "@schematics/angular:interceptor": {
+      "flat": true
+    },
+    "@schematics/angular:pipe": {
+      "flat": true
+    },
+    "@schematics/angular:resolver": {
+      "flat": true
+    }
+  }
 }

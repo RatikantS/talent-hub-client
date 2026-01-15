@@ -1,0 +1,11 @@
+{
+  "talent-hub-user": "http://localhost:4201/remoteEntry.json",
+  "talent-hub-dashboard": "http://localhost:4202/remoteEntry.json",
+  "talent-hub-requisition": "http://localhost:4203/remoteEntry.json",
+  "talent-hub-interview": "http://localhost:4204/remoteEntry.json",
+  "talent-hub-candidate": "http://localhost:4205/remoteEntry.json",
+  "talent-hub-assessment": "http://localhost:4206/remoteEntry.json",
+  "talent-hub-onboarding": "http://localhost:4207/remoteEntry.json",
+  "talent-hub-audit": "http://localhost:4208/remoteEntry.json",
+  "talent-hub-report": "http://localhost:4209/remoteEntry.json"
+}

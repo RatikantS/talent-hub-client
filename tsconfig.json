@@ -19,5 +19,67 @@
     "strictInputAccessModifiers": true,
     "strictTemplates": true
   },
-  "files": []
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/talent-hub-host/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/talent-hub-host/tsconfig.spec.json"
+    },
+    {
+      "path": "./apps/talent-hub-user/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/talent-hub-user/tsconfig.spec.json"
+    },
+    {
+      "path": "./apps/talent-hub-dashboard/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/talent-hub-dashboard/tsconfig.spec.json"
+    },
+    {
+      "path": "./apps/talent-hub-requisition/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/talent-hub-requisition/tsconfig.spec.json"
+    },
+    {
+      "path": "./apps/talent-hub-interview/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/talent-hub-interview/tsconfig.spec.json"
+    },
+    {
+      "path": "./apps/talent-hub-candidate/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/talent-hub-candidate/tsconfig.spec.json"
+    },
+    {
+      "path": "./apps/talent-hub-assessment/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/talent-hub-assessment/tsconfig.spec.json"
+    },
+    {
+      "path": "./apps/talent-hub-onboarding/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/talent-hub-onboarding/tsconfig.spec.json"
+    },
+    {
+      "path": "./apps/talent-hub-audit/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/talent-hub-audit/tsconfig.spec.json"
+    },
+    {
+      "path": "./apps/talent-hub-report/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/talent-hub-report/tsconfig.spec.json"
+    }
+  ]
 }

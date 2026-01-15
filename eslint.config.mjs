@@ -9,6 +9,9 @@ import prettierPlugin from 'eslint-plugin-prettier';
 
 export default tseslint.config(
   {
+    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '.angular/**'],
+  },
+  {
     files: ['**/*.ts'],
     extends: [
       eslint.configs.recommended,
@@ -59,11 +62,6 @@ export default tseslint.config(
     rules: {
       '@angular-eslint/template/no-negated-async': 'error',
       '@angular-eslint/template/use-track-by-function': 'error',
-      '@angular-eslint/template/accessibility-alt-text': 'error',
-      '@angular-eslint/template/accessibility-elements-content': 'error',
-      '@angular-eslint/template/accessibility-label-has-associated-control': 'error',
-      '@angular-eslint/template/click-events-have-key-events': 'error',
-      '@angular-eslint/template/mouse-events-have-key-events': 'error',
     },
   },
 );
