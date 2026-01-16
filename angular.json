@@ -67,6 +67,11 @@
               {
                 "glob": "**/*",
                 "input": "apps/talent-hub-host/public"
+              },
+              {
+                "glob": "manifest.webmanifest",
+                "input": "apps/talent-hub-host/public",
+                "output": "/"
               }
             ],
             "styles": ["apps/talent-hub-host/src/styles.scss"],
@@ -96,7 +101,8 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "serviceWorker": "apps/talent-hub-host/src/ngsw-config.json"
             },
             "de": {
               "localize": ["de"]
