@@ -30,6 +30,17 @@ function getSharedConfig() {
       strictVersion: true,
       requiredVersion: 'auto',
     },
+    // Ensure @angular/localize is shared for i18n
+    '@angular/localize': {
+      singleton: true,
+      strictVersion: true,
+      requiredVersion: 'auto',
+    },
+    '@angular/localize/init': {
+      singleton: true,
+      strictVersion: true,
+      requiredVersion: 'auto',
+    },
     // Ensure custom libraries are shared
     'talent-hub-core': {
       singleton: true,

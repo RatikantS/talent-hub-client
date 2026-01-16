@@ -16,6 +16,19 @@
       "root": "apps/talent-hub-host",
       "sourceRoot": "apps/talent-hub-host/src",
       "prefix": "app",
+      "i18n": {
+        "sourceLocale": "en",
+        "locales": {
+          "de": {
+            "translation": "apps/talent-hub-host/src/assets/i18n/messages.de.json",
+            "baseHref": "/de/"
+          },
+          "es": {
+            "translation": "apps/talent-hub-host/src/assets/i18n/messages.es.json",
+            "baseHref": "/es/"
+          }
+        }
+      },
       "architect": {
         "build": {
           "builder": "@angular-architects/native-federation:build",
@@ -57,10 +70,11 @@
               }
             ],
             "styles": ["apps/talent-hub-host/src/styles.scss"],
-            "polyfills": ["es-module-shims"],
+            "polyfills": ["es-module-shims", "@angular/localize/init"],
             "stylePreprocessorOptions": {
               "includePaths": ["libs/talent-hub-ui/src/lib/styles"]
-            }
+            },
+            "localize": false
           },
           "configurations": {
             "production": {
@@ -83,6 +97,12 @@
                 }
               ],
               "outputHashing": "all"
+            },
+            "de": {
+              "localize": ["de"]
+            },
+            "es": {
+              "localize": ["es"]
             },
             "development": {
               "optimization": false,
@@ -130,6 +150,19 @@
       "root": "apps/talent-hub-user",
       "sourceRoot": "apps/talent-hub-user/src",
       "prefix": "app",
+      "i18n": {
+        "sourceLocale": "en",
+        "locales": {
+          "de": {
+            "translation": "apps/talent-hub-user/src/assets/i18n/messages.de.json",
+            "baseHref": "/de/"
+          },
+          "es": {
+            "translation": "apps/talent-hub-user/src/assets/i18n/messages.es.json",
+            "baseHref": "/es/"
+          }
+        }
+      },
       "architect": {
         "build": {
           "builder": "@angular-architects/native-federation:build",
@@ -162,7 +195,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "apps/talent-hub-user/src/main.ts",
-            "polyfills": ["es-module-shims"],
+            "polyfills": ["es-module-shims", "@angular/localize/init"],
             "tsConfig": "apps/talent-hub-user/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -242,6 +275,19 @@
       "root": "apps/talent-hub-dashboard",
       "sourceRoot": "apps/talent-hub-dashboard/src",
       "prefix": "app",
+      "i18n": {
+        "sourceLocale": "en",
+        "locales": {
+          "de": {
+            "translation": "apps/talent-hub-dashboard/src/assets/i18n/messages.de.json",
+            "baseHref": "/de/"
+          },
+          "es": {
+            "translation": "apps/talent-hub-dashboard/src/assets/i18n/messages.es.json",
+            "baseHref": "/es/"
+          }
+        }
+      },
       "architect": {
         "build": {
           "builder": "@angular-architects/native-federation:build",
@@ -274,7 +320,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "apps/talent-hub-dashboard/src/main.ts",
-            "polyfills": ["es-module-shims"],
+            "polyfills": ["es-module-shims", "@angular/localize/init"],
             "tsConfig": "apps/talent-hub-dashboard/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -354,6 +400,19 @@
       "root": "apps/talent-hub-requisition",
       "sourceRoot": "apps/talent-hub-requisition/src",
       "prefix": "app",
+      "i18n": {
+        "sourceLocale": "en",
+        "locales": {
+          "de": {
+            "translation": "apps/talent-hub-requisition/src/assets/i18n/messages.de.json",
+            "baseHref": "/de/"
+          },
+          "es": {
+            "translation": "apps/talent-hub-requisition/src/assets/i18n/messages.es.json",
+            "baseHref": "/es/"
+          }
+        }
+      },
       "architect": {
         "build": {
           "builder": "@angular-architects/native-federation:build",
@@ -386,7 +445,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "apps/talent-hub-requisition/src/main.ts",
-            "polyfills": ["es-module-shims"],
+            "polyfills": ["es-module-shims", "@angular/localize/init"],
             "tsConfig": "apps/talent-hub-requisition/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -466,6 +525,19 @@
       "root": "apps/talent-hub-interview",
       "sourceRoot": "apps/talent-hub-interview/src",
       "prefix": "app",
+      "i18n": {
+        "sourceLocale": "en",
+        "locales": {
+          "de": {
+            "translation": "apps/talent-hub-interview/src/assets/i18n/messages.de.json",
+            "baseHref": "/de/"
+          },
+          "es": {
+            "translation": "apps/talent-hub-interview/src/assets/i18n/messages.es.json",
+            "baseHref": "/es/"
+          }
+        }
+      },
       "architect": {
         "build": {
           "builder": "@angular-architects/native-federation:build",
@@ -498,7 +570,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "apps/talent-hub-interview/src/main.ts",
-            "polyfills": ["es-module-shims"],
+            "polyfills": ["es-module-shims", "@angular/localize/init"],
             "tsConfig": "apps/talent-hub-interview/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -578,6 +650,19 @@
       "root": "apps/talent-hub-candidate",
       "sourceRoot": "apps/talent-hub-candidate/src",
       "prefix": "app",
+      "i18n": {
+        "sourceLocale": "en",
+        "locales": {
+          "de": {
+            "translation": "apps/talent-hub-candidate/src/assets/i18n/messages.de.json",
+            "baseHref": "/de/"
+          },
+          "es": {
+            "translation": "apps/talent-hub-candidate/src/assets/i18n/messages.es.json",
+            "baseHref": "/es/"
+          }
+        }
+      },
       "architect": {
         "build": {
           "builder": "@angular-architects/native-federation:build",
@@ -610,7 +695,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "apps/talent-hub-candidate/src/main.ts",
-            "polyfills": ["es-module-shims"],
+            "polyfills": ["es-module-shims", "@angular/localize/init"],
             "tsConfig": "apps/talent-hub-candidate/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -690,6 +775,19 @@
       "root": "apps/talent-hub-assessment",
       "sourceRoot": "apps/talent-hub-assessment/src",
       "prefix": "app",
+      "i18n": {
+        "sourceLocale": "en",
+        "locales": {
+          "de": {
+            "translation": "apps/talent-hub-assessment/src/assets/i18n/messages.de.json",
+            "baseHref": "/de/"
+          },
+          "es": {
+            "translation": "apps/talent-hub-assessment/src/assets/i18n/messages.es.json",
+            "baseHref": "/es/"
+          }
+        }
+      },
       "architect": {
         "build": {
           "builder": "@angular-architects/native-federation:build",
@@ -722,7 +820,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "apps/talent-hub-assessment/src/main.ts",
-            "polyfills": ["es-module-shims"],
+            "polyfills": ["es-module-shims", "@angular/localize/init"],
             "tsConfig": "apps/talent-hub-assessment/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -802,6 +900,19 @@
       "root": "apps/talent-hub-onboarding",
       "sourceRoot": "apps/talent-hub-onboarding/src",
       "prefix": "app",
+      "i18n": {
+        "sourceLocale": "en",
+        "locales": {
+          "de": {
+            "translation": "apps/talent-hub-onboarding/src/assets/i18n/messages.de.json",
+            "baseHref": "/de/"
+          },
+          "es": {
+            "translation": "apps/talent-hub-onboarding/src/assets/i18n/messages.es.json",
+            "baseHref": "/es/"
+          }
+        }
+      },
       "architect": {
         "build": {
           "builder": "@angular-architects/native-federation:build",
@@ -834,7 +945,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "apps/talent-hub-onboarding/src/main.ts",
-            "polyfills": ["es-module-shims"],
+            "polyfills": ["es-module-shims", "@angular/localize/init"],
             "tsConfig": "apps/talent-hub-onboarding/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -914,6 +1025,19 @@
       "root": "apps/talent-hub-audit",
       "sourceRoot": "apps/talent-hub-audit/src",
       "prefix": "app",
+      "i18n": {
+        "sourceLocale": "en",
+        "locales": {
+          "de": {
+            "translation": "apps/talent-hub-audit/src/assets/i18n/messages.de.json",
+            "baseHref": "/de/"
+          },
+          "es": {
+            "translation": "apps/talent-hub-audit/src/assets/i18n/messages.es.json",
+            "baseHref": "/es/"
+          }
+        }
+      },
       "architect": {
         "build": {
           "builder": "@angular-architects/native-federation:build",
@@ -946,7 +1070,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "apps/talent-hub-audit/src/main.ts",
-            "polyfills": ["es-module-shims"],
+            "polyfills": ["es-module-shims", "@angular/localize/init"],
             "tsConfig": "apps/talent-hub-audit/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -1026,6 +1150,19 @@
       "root": "apps/talent-hub-report",
       "sourceRoot": "apps/talent-hub-report/src",
       "prefix": "app",
+      "i18n": {
+        "sourceLocale": "en",
+        "locales": {
+          "de": {
+            "translation": "apps/talent-hub-report/src/assets/i18n/messages.de.json",
+            "baseHref": "/de/"
+          },
+          "es": {
+            "translation": "apps/talent-hub-report/src/assets/i18n/messages.es.json",
+            "baseHref": "/es/"
+          }
+        }
+      },
       "architect": {
         "build": {
           "builder": "@angular-architects/native-federation:build",
@@ -1058,7 +1195,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "apps/talent-hub-report/src/main.ts",
-            "polyfills": ["es-module-shims"],
+            "polyfills": ["es-module-shims", "@angular/localize/init"],
             "tsConfig": "apps/talent-hub-report/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
