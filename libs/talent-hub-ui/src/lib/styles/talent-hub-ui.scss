@@ -1,23 +1,21 @@
 // ============================================================================
 // Talent Hub Shared Styles
 // ============================================================================
-// Main entry point for shared styles across all MFEs
-//
-// Usage in MFE apps:
-// @import 'talent-hub-ui/styles';
 
-// ----------------------------------------------------------------------------
-// Import Shared Styles
-// ----------------------------------------------------------------------------
 // Variables and configuration
-@import './variables';
+@use './variables';
 
 // Mixins
-@import './mixins';
+@use './mixins';
 
 // Base styles
-@import './typography';
-@import './utilities';
+@use './typography';
+@use './utilities';
+
+// ----------------------------------------------------------------------------
+// Import Siemens iX Styles
+// ----------------------------------------------------------------------------
+@import '@siemens/ix/dist/siemens-ix/siemens-ix.css';
 
 // ----------------------------------------------------------------------------
 // Global Styles

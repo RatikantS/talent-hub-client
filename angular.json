@@ -57,7 +57,10 @@
               }
             ],
             "styles": ["apps/talent-hub-host/src/styles.scss"],
-            "polyfills": ["es-module-shims"]
+            "polyfills": ["es-module-shims"],
+            "stylePreprocessorOptions": {
+              "includePaths": ["libs/talent-hub-ui/src/lib/styles"]
+            }
           },
           "configurations": {
             "production": {

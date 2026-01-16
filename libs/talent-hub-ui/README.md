@@ -10,7 +10,7 @@ src/
 │   ├── components/      # Shared Angular components
 │   ├── directives/      # Shared Angular directives
 │   ├── pipes/           # Shared Angular pipes
-│   └── styles/          # Shared SCSS styles
+│   └── styles/          # Shared SCSS styles (including Siemens iX)
 │       ├── _variables.scss
 │       ├── _mixins.scss
 │       ├── _typography.scss
@@ -23,13 +23,27 @@ src/
 
 ### Using Components, Directives, or Pipes
 
-Import in your MFE applications:
+Import custom components from this library:
 
 ```typescript
-import { MyComponent } from 'talent-hub-ui';
+import { MyCustomComponent } from 'talent-hub-ui';
 
 @Component({
-  imports: [MyComponent],
+  imports: [MyCustomComponent],
+  // ...
+})
+export class FeatureComponent {}
+```
+
+### Using Siemens iX Components
+
+Import iX components directly from `@siemens/ix-angular`:
+
+```typescript
+import { IxButton, IxCard } from '@siemens/ix-angular/standalone';
+
+@Component({
+  imports: [IxButton, IxCard],
   // ...
 })
 export class FeatureComponent {}
@@ -37,7 +51,7 @@ export class FeatureComponent {}
 
 ### Using Shared Styles
 
-Import in your MFE's `styles.scss`:
+Import in your MFE's `styles.scss` to get iX CSS and custom styles:
 
 ```scss
 // apps/your-mfe/src/styles.scss

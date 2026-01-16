@@ -1,4 +1,57 @@
 // ============================================================================
 // Talent Hub Theme Variables
 // ============================================================================
-// This file contains custom theme variables
+// This file contains custom theme variables and Siemens iX theme overrides
+// Import this after iX styles to override default values
+
+// ----------------------------------------------------------------------------
+// Siemens iX Theme Configuration
+// ----------------------------------------------------------------------------
+// Available themes: 'classic-light', 'classic-dark', 'brand-light', 'brand-dark'
+// Set in your app using: themeSwitcher.setTheme('classic') or themeSwitcher.setTheme('brand')
+
+// ----------------------------------------------------------------------------
+// Brand Colors (Override iX defaults if needed)
+// ----------------------------------------------------------------------------
+// Example: Custom primary color
+// $primary-color: #007bff;
+
+// ----------------------------------------------------------------------------
+// Spacing
+// ----------------------------------------------------------------------------
+$spacing-xs: 0.25rem;
+$spacing-sm: 0.5rem;
+$spacing-md: 1rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2rem;
+$spacing-xxl: 3rem;
+
+// ----------------------------------------------------------------------------
+// Typography
+// ----------------------------------------------------------------------------
+// $font-family-base: 'Siemens Sans', sans-serif; // iX default font
+// $font-size-base: 1rem;
+// $line-height-base: 1.5;
+
+// ----------------------------------------------------------------------------
+// Z-Index Layers
+// ----------------------------------------------------------------------------
+$z-index-dropdown: 1000;
+$z-index-modal: 1050;
+$z-index-toast: 1100;
+$z-index-tooltip: 1200;
+
+// ----------------------------------------------------------------------------
+// Breakpoints (Aligned with iX)
+// ----------------------------------------------------------------------------
+$breakpoint-xs: 0;
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+$breakpoint-xxl: 1400px;
+
+// ----------------------------------------------------------------------------
+// Component-Specific Variables
+// ----------------------------------------------------------------------------
+// Add component-specific variables here as needed

@@ -1,4 +1,5 @@
-const { withNativeFederation, shareAll } = require('@angular-architects/native-federation/config');
+const { withNativeFederation } = require('@angular-architects/native-federation/config');
+const { getSharedConfig } = require('../../federation.shared.config');
 
 module.exports = withNativeFederation({
   name: 'talent-hub-assessment',
@@ -7,13 +8,7 @@ module.exports = withNativeFederation({
     './routes': './apps/talent-hub-assessment/src/app/app.routes.ts',
   },
 
-  shared: {
-    ...shareAll({
-      singleton: true,
-      strictVersion: true,
-      requiredVersion: 'auto',
-    }),
-  },
+  shared: getSharedConfig(),
 
   features: {
     ignoreUnusedDeps: true,
