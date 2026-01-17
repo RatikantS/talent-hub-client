@@ -1320,6 +1320,26 @@
           "options": {
             "tsConfig": "libs/talent-hub-ui/tsconfig.spec.json"
           }
+        },
+        "storybook": {
+          "builder": "@storybook/angular:start-storybook",
+          "options": {
+            "configDir": "libs/talent-hub-ui/.storybook",
+            "browserTarget": "talent-hub-ui:build",
+            "compodoc": true,
+            "compodocArgs": ["-e", "json", "-d", "libs/talent-hub-ui"],
+            "port": 6006
+          }
+        },
+        "build-storybook": {
+          "builder": "@storybook/angular:build-storybook",
+          "options": {
+            "configDir": "libs/talent-hub-ui/.storybook",
+            "browserTarget": "talent-hub-ui:build",
+            "compodoc": true,
+            "compodocArgs": ["-e", "json", "-d", "libs/talent-hub-ui"],
+            "outputDir": "dist/storybook/talent-hub-ui"
+          }
         }
       }
     }

@@ -30,3 +30,7 @@ coverage
 
 # Angular specific
 .angular/cache
+
+# Storybook
+storybook-static
+documentation.json

@@ -1,0 +1,4 @@
+{
+  "include": ["libs/talent-hub-ui/src/**/*"],
+  "exclude": ["libs/talent-hub-ui/src/**/*.spec.ts", "libs/talent-hub-ui/src/**/*.stories.ts"]
+}

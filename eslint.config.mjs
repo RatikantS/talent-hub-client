@@ -6,6 +6,7 @@ import angularTemplateParser from '@angular-eslint/template-parser';
 import angularEslintTemplate from '@angular-eslint/eslint-plugin-template';
 import prettierConfig from 'eslint-config-prettier';
 import prettierPlugin from 'eslint-plugin-prettier';
+import storybook from 'eslint-plugin-storybook';
 
 export default tseslint.config(
   {
@@ -64,4 +65,5 @@ export default tseslint.config(
       '@angular-eslint/template/use-track-by-function': 'error',
     },
   },
+  storybook.configs['flat/recommended'],
 );
