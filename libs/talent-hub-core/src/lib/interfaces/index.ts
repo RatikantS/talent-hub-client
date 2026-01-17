@@ -5,4 +5,6 @@
  * Unauthorized reproduction or distribution is prohibited.
  */
 
-export * from './app.constant';
+export * from './app-config.interface';
+export * from './user-preference.interface';
+export * from './user.interface';
