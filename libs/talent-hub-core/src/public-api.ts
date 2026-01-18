@@ -18,6 +18,9 @@ export * from './lib/interfaces';
 // Export models
 export * from './lib/models';
 
+// Export types
+export * from './lib/types';
+
 // Export enums
 export * from './lib/enums';
 

@@ -53,6 +53,13 @@ export default tseslint.config(
     },
   },
   {
+    files: ['**/*.spec.ts', '**/*.spec.js', '**/*.test.ts', '**/*.test.js'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-empty-function': 'off',
+    },
+  },
+  {
     files: ['**/*.html'],
     languageOptions: {
       parser: angularTemplateParser,

@@ -6,15 +6,20 @@
  */
 
 import { AppConfig, UserPreference } from '../../interfaces';
-import { Environment, LogLevel } from '../../enums';
 
 /**
  * Represents the global application state for the Talent Hub platform.
  *
  * This interface defines the structure of the root state object managed by the
- * application store. It includes configuration, user preferences, environment,
- * logging, and maintenance mode. All properties are intended to be serializable,
+ * application store. It includes configuration, user preferences, feature flags,
+ * and maintenance mode. All properties are intended to be serializable,
  * type-safe, and suitable for state management, debugging, and UI logic.
+ *
+ * - isInitialized: Indicates if the application has completed its initialization sequence.
+ * - isMaintenanceModeEnabled: If true, the application is in maintenance mode and should display a maintenance UI or restrict user actions.
+ * - config: The current application configuration (see AppConfig).
+ * - features: Feature flags for toggling application features at runtime (Record<string, boolean> | null).
+ * - preference: The user's active selection and preferences (see UserPreference).
  */
 export interface AppState {
   /** Indicates if the application has completed its initialization sequence. */
@@ -26,15 +31,22 @@ export interface AppState {
    */
   isMaintenanceModeEnabled: boolean;
 
-  /** The current deployment environment (see Environment enum). */
-  environment: Environment;
-
-  /** The current log level for client-side logging (see LogLevel enum). */
-  logLevel: LogLevel;
-
-  /** The current application configuration (see AppConfig). */
+  /**
+   * The current application configuration (see AppConfig).
+   * This includes environment, logging, and other global settings.
+   */
   config: AppConfig | null;
 
-  /** The user's active selection and preferences (see UserPreference). */
+  /**
+   * Feature flags for toggling application features at runtime.
+   * The key is the feature name, and the value is true (enabled) or false (disabled).
+   * If null, no feature flags are set.
+   */
+  features: Record<string, boolean> | null;
+
+  /**
+   * The user's active selection and preferences (see UserPreference).
+   * Includes theme, language, and other personalization options.
+   */
   preference: UserPreference | null;
 }

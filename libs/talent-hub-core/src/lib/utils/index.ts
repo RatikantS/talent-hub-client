@@ -5,4 +5,4 @@
  * Unauthorized reproduction or distribution is prohibited.
  */
 
-export {};
+export * from './app.util';

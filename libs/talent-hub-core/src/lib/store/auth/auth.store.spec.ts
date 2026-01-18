@@ -5,6 +5,8 @@
  * Unauthorized reproduction or distribution is prohibited.
  */
 
+import { describe, expect, it } from 'vitest';
+
 import { AuthStore } from './auth.store';
 
 describe('AuthStore', () => {
@@ -15,7 +17,6 @@ describe('AuthStore', () => {
     // Reset state to initial values before each test
     store.setToken(null);
     store.setUser(null);
-    // If isAuthenticated is managed by a setter, use store.setAuthenticated(false);
   });
 
   it('should initialize with isAuthenticated false', () => {
