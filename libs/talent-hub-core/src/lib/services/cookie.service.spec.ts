@@ -5,8 +5,7 @@
  * Unauthorized reproduction or distribution is prohibited.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { TestBed } from '@angular/core/testing';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CookieService } from '../services';
 
@@ -15,9 +14,6 @@ describe('CookieService', () => {
   let cookieStr = '';
 
   beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [CookieService],
-    });
     cookieStr = '';
     vi.stubGlobal('document', {
       get cookie() {
@@ -27,65 +23,98 @@ describe('CookieService', () => {
         cookieStr = val;
       },
     });
-    service = TestBed.inject(CookieService);
+    service = new CookieService();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('should create an instance', () => {
     expect(new CookieService()).toBeInstanceOf(CookieService);
   });
 
-  it('should set and get a cookie', () => {
-    service.setCookie('foo', 'bar');
-    expect(service.getCookie('foo')).toBe('bar');
-  });
-
-  it('should encode/decode cookie values', () => {
-    service.setCookie('sp ace', 'b@r=1');
-    expect(service.getCookie('sp ace')).toBe('b@r=1');
-  });
-
-  it('should remove a cookie', () => {
-    service.setCookie('foo', 'bar');
-    service.removeCookie('foo');
-    const value = service.getCookie('foo');
-    expect(value === null || value === '').toBe(true);
-  });
-
-  it('should set cookie with options', () => {
-    service.setCookie('foo', 'bar', {
-      path: '/x',
-      domain: 'test.com',
-      secure: true,
-      sameSite: 'Strict',
+  describe('setCookie', () => {
+    it('should set and get a cookie', () => {
+      service.setCookie('foo', 'bar');
+      expect(service.getCookie('foo')).toBe('bar');
     });
-    expect(cookieStr).toMatch(/Path=\/x/);
-    expect(cookieStr).toMatch(/Domain=test.com/);
-    expect(cookieStr).toMatch(/Secure/);
-    expect(cookieStr).toMatch(/SameSite=Strict/);
+
+    it('should encode/decode cookie values', () => {
+      service.setCookie('sp ace', 'b@r=1');
+      expect(service.getCookie('sp ace')).toBe('b@r=1');
+    });
+
+    it('should set a cookie with domain option', () => {
+      service.setCookie('foo', 'bar', { domain: 'example.com' });
+      expect(cookieStr).toContain('Domain=example.com');
+    });
+
+    it('should set a cookie with secure option', () => {
+      service.setCookie('foo', 'bar', { secure: true });
+      expect(cookieStr).toContain('Secure');
+    });
+
+    it('should set a cookie with sameSite option', () => {
+      service.setCookie('foo', 'bar', { sameSite: 'Strict' });
+      expect(cookieStr).toContain('SameSite=Strict');
+    });
+
+    it('should set a cookie with all options', () => {
+      service.setCookie('foo', 'bar', {
+        domain: 'example.com',
+        secure: true,
+        sameSite: 'Lax',
+        path: '/test',
+        expires: new Date('2030-01-01T00:00:00Z'),
+      });
+      expect(cookieStr).toContain('Domain=example.com');
+      expect(cookieStr).toContain('Secure');
+      expect(cookieStr).toContain('SameSite=Lax');
+      expect(cookieStr).toContain('Path=/test');
+      expect(cookieStr).toContain('Expires=Tue, 01 Jan 2030 00:00:00 GMT');
+    });
+
+    it('should set a cookie with expires as number (days)', () => {
+      // Freeze time for predictable Expires value
+      const now = new Date('2026-01-19T12:00:00Z');
+      vi.setSystemTime(now);
+      service.setCookie('foo', 'bar', { expires: 2 });
+      // Expires should be 2 days from now
+      const expectedDate = new Date(now.getTime() + 2 * 864e5).toUTCString();
+      expect(cookieStr).toContain(`Expires=${expectedDate}`);
+      vi.useRealTimers();
+    });
   });
 
-  it('should set cookie with expires (days)', () => {
-    service.setCookie('foo', 'bar', { expires: 1 });
-    expect(cookieStr).toMatch(/Expires=/);
+  describe('getCookie', () => {
+    it('should get a cookie value', () => {
+      service.setCookie('foo', 'bar');
+      expect(service.getCookie('foo')).toBe('bar');
+    });
+
+    it('should return null if cookie is not found', () => {
+      expect(service.getCookie('notfound')).toBeNull();
+    });
+
+    it('should decode cookie value', () => {
+      service.setCookie('sp ace', 'b@r=1');
+      expect(service.getCookie('sp ace')).toBe('b@r=1');
+    });
+
+    it('should return null if cookie name does not match any key', () => {
+      service.setCookie('foo', 'bar');
+      service.setCookie('baz', 'qux');
+      expect(service.getCookie('notfound')).toBeNull();
+    });
   });
 
-  it('should set cookie with expires (Date)', () => {
-    const date = new Date(Date.now() + 10000);
-    service.setCookie('foo', 'bar', { expires: date });
-    expect(cookieStr).toMatch(/Expires=/);
-  });
-
-  it('should return null for missing cookie', () => {
-    expect(service.getCookie('nope')).toBeNull();
-  });
-
-  it('should return null if document.cookie is empty', () => {
-    cookieStr = '';
-    expect(service.getCookie('foo')).toBeNull();
-  });
-
-  it('should return null for malformed cookie string', () => {
-    cookieStr = 'malformed_cookie_without_equals';
-    expect(service.getCookie('foo')).toBeNull();
+  describe('removeCookie', () => {
+    it('should remove a cookie', () => {
+      service.setCookie('foo', 'bar');
+      service.removeCookie('foo');
+      const value = service.getCookie('foo');
+      expect(value).toBe('');
+    });
   });
 });

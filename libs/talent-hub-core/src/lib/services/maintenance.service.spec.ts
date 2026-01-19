@@ -5,52 +5,73 @@
  * Unauthorized reproduction or distribution is prohibited.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { TestBed } from '@angular/core/testing';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MaintenanceService } from '../services';
-import { AppStore } from '../store';
+
+// Use vi.hoisted to declare variables that can be accessed inside vi.mock
+const { mockAppStore } = vi.hoisted(() => {
+  return {
+    mockAppStore: {
+      isMaintenanceModeEnabled: vi.fn(),
+      setMaintenanceModeEnabled: vi.fn(),
+    },
+  };
+});
+
+// Mock @angular/core inject before importing MaintenanceService
+vi.mock('@angular/core', async (importOriginal) => {
+  const actual = await importOriginal();
+  return Object.assign({}, actual, {
+    inject: vi.fn((token: any) => {
+      const tokenStr = String(token);
+      if (
+        token?.name === 'AppStore' ||
+        tokenStr.includes('AppStore') ||
+        token?.name === 'SignalStore' ||
+        tokenStr.includes('SignalStore')
+      ) {
+        return mockAppStore;
+      }
+      throw new Error(`Unmocked token in test: ${token?.name || tokenStr}`);
+    }),
+  });
+});
 
 describe('MaintenanceService', () => {
-  let appStore: {
-    isMaintenanceModeEnabled?: () => boolean;
-    setMaintenanceModeEnabled: ReturnType<typeof vi.fn>;
-  };
   let service: MaintenanceService;
 
   beforeEach(() => {
-    appStore = {
-      isMaintenanceModeEnabled: vi.fn(),
-      setMaintenanceModeEnabled: vi.fn(),
-    };
-    TestBed.configureTestingModule({
-      providers: [MaintenanceService, { provide: AppStore, useValue: appStore }],
-    });
-    service = TestBed.inject(MaintenanceService);
+    vi.clearAllMocks();
+    service = new MaintenanceService();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should return true if maintenance mode is enabled', () => {
-    appStore.isMaintenanceModeEnabled = vi.fn().mockReturnValue(true);
+    mockAppStore.isMaintenanceModeEnabled.mockReturnValue(true);
     expect(service.isInMaintenance()).toBe(true);
     expect(service.getMaintenanceMode()).toBe(true);
   });
 
   it('should return false if maintenance mode is disabled', () => {
-    appStore.isMaintenanceModeEnabled = vi.fn().mockReturnValue(false);
+    mockAppStore.isMaintenanceModeEnabled.mockReturnValue(false);
     expect(service.isInMaintenance()).toBe(false);
     expect(service.getMaintenanceMode()).toBe(false);
   });
 
   it('should return false if isMaintenanceModeEnabled is undefined', () => {
-    appStore.isMaintenanceModeEnabled = undefined;
+    (mockAppStore as any).isMaintenanceModeEnabled = undefined;
     expect(service.isInMaintenance()).toBe(false);
     expect(service.getMaintenanceMode()).toBe(false);
   });
 
   it('should call setMaintenanceMode on the store', () => {
     service.setMaintenanceMode(true);
-    expect(appStore.setMaintenanceModeEnabled).toHaveBeenCalledWith(true);
+    expect(mockAppStore.setMaintenanceModeEnabled).toHaveBeenCalledWith(true);
     service.setMaintenanceMode(false);
-    expect(appStore.setMaintenanceModeEnabled).toHaveBeenCalledWith(false);
+    expect(mockAppStore.setMaintenanceModeEnabled).toHaveBeenCalledWith(false);
   });
 });

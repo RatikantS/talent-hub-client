@@ -5,22 +5,42 @@
  * Unauthorized reproduction or distribution is prohibited.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { TestBed } from '@angular/core/testing';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { UserService } from '../services';
-import { AppStore } from '../store';
+
+// Use vi.hoisted to declare variables that can be accessed inside vi.mock
+const { mockAppStore } = vi.hoisted(() => {
+  return {
+    mockAppStore: { getPreference: vi.fn() },
+  };
+});
+
+// Mock @angular/core inject before importing UserService
+vi.mock('@angular/core', async (importOriginal) => {
+  const actual = await importOriginal();
+  return Object.assign({}, actual, {
+    inject: vi.fn((token: any) => {
+      const tokenStr = String(token);
+      if (
+        token?.name === 'AppStore' ||
+        tokenStr.includes('AppStore') ||
+        token?.name === 'SignalStore' ||
+        tokenStr.includes('SignalStore')
+      ) {
+        return mockAppStore;
+      }
+      throw new Error(`Unmocked token in test: ${token?.name || tokenStr}`);
+    }),
+  });
+});
 
 describe('UserService', () => {
-  let appStore: { getPreference: ReturnType<typeof vi.fn> };
   let service: UserService;
 
   beforeEach(() => {
-    appStore = { getPreference: vi.fn() };
-    TestBed.configureTestingModule({
-      providers: [UserService, { provide: AppStore, useValue: appStore }],
-    });
-    service = TestBed.inject(UserService);
+    vi.clearAllMocks();
+    service = new UserService();
   });
 
   afterEach(() => {
@@ -28,19 +48,19 @@ describe('UserService', () => {
   });
 
   it('should return roles if present in user preference', () => {
-    appStore.getPreference.mockReturnValue({ roles: ['admin', 'user'] });
+    mockAppStore.getPreference.mockReturnValue({ roles: ['admin', 'user'] });
     expect(service.roles()).toEqual(['admin', 'user']);
     expect(service.getUserRoles()).toEqual(['admin', 'user']);
   });
 
   it('should return an empty array if roles is missing in user preference', () => {
-    appStore.getPreference.mockReturnValue({});
+    mockAppStore.getPreference.mockReturnValue({});
     expect(service.roles()).toEqual([]);
     expect(service.getUserRoles()).toEqual([]);
   });
 
   it('should return an empty array if user preference is null', () => {
-    appStore.getPreference.mockReturnValue(null);
+    mockAppStore.getPreference.mockReturnValue(null);
     expect(service.roles()).toEqual([]);
     expect(service.getUserRoles()).toEqual([]);
   });

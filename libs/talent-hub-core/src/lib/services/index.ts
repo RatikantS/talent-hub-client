@@ -8,6 +8,7 @@
 export * from './api.service';
 export * from './auth.service';
 export * from './cookie.service';
+export * from './event-bus.service';
 export * from './feature-flag.service';
 export * from './logger.service';
 export * from './maintenance.service';

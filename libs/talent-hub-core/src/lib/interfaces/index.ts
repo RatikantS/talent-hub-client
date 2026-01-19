@@ -7,6 +7,7 @@
 
 export * from './app-config.interface';
 export * from './cookie-options.interface';
+export * from './event-bus-message.interface';
 export * from './http-options.interface';
 export * from './log-config.interface';
 export * from './user.interface';
