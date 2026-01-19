@@ -10,6 +10,7 @@ export * from './auth.service';
 export * from './cookie.service';
 export * from './event-bus.service';
 export * from './feature-flag.service';
+export * from './loading-indicator.service';
 export * from './logger.service';
 export * from './maintenance.service';
 export * from './storage.service';

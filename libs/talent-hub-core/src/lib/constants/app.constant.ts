@@ -28,4 +28,12 @@ export const APP_CONSTANT = {
 
   /** The default language for localization */
   DEFAULT_LANGUAGE: 'en',
+
+  /**
+   * Event bus keys for application-wide pub-sub events.
+   */
+  EVENT_BUS_KEYS: {
+    HTTP_ERROR: 'th:http.error',
+    HTTP_UNKNOWN_ERROR: 'th:http.unknown.error',
+  },
 };
