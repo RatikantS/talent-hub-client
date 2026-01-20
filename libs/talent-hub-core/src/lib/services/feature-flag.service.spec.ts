@@ -5,82 +5,58 @@
  * Unauthorized reproduction or distribution is prohibited.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FeatureFlagService } from '../services';
 
-// Use vi.hoisted to declare variables that can be accessed inside vi.mock
-const { mockAppStore } = vi.hoisted(() => {
-  return {
-    mockAppStore: { getConfig: vi.fn() },
-  };
-});
-
-// Mock @angular/core inject before importing FeatureFlagService
-vi.mock('@angular/core', async (importOriginal) => {
-  const actual = await importOriginal();
-  return Object.assign({}, actual, {
-    inject: vi.fn((token: any) => {
-      const tokenStr = String(token);
-      if (
-        token?.name === 'AppStore' ||
-        tokenStr.includes('AppStore') ||
-        token?.name === 'SignalStore' ||
-        tokenStr.includes('SignalStore')
-      ) {
-        return mockAppStore;
-      }
-      throw new Error(`Unmocked token in test: ${token?.name || tokenStr}`);
-    }),
-  });
-});
+class MockAppStore {
+  private flags: Record<string, boolean> = {};
+  getFeatureFlag = vi.fn((key: string) => this.flags[key]);
+  setFlag(key: string, value: boolean) {
+    this.flags[key] = value;
+  }
+}
 
 describe('FeatureFlagService', () => {
   let service: FeatureFlagService;
+  let mockAppStore: MockAppStore;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    service = new FeatureFlagService();
+    mockAppStore = new MockAppStore();
+    // Subclass FeatureFlagService to inject mock AppStore
+    class TestFeatureFlagService extends FeatureFlagService {
+      constructor(private store: MockAppStore) {
+        super();
+      }
+      protected override getAppStore() {
+        return this.store as any;
+      }
+    }
+    service = new TestFeatureFlagService(mockAppStore) as any;
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  it('should return true if feature flag is enabled', () => {
+    mockAppStore.setFlag('featureA', true);
+    expect(service.isEnabled('featureA')).toBe(true);
   });
 
-  it('should return true if the feature flag is enabled', () => {
-    mockAppStore.getConfig.mockReturnValue({ features: { test: true } });
-    expect(service.isEnabled('test')).toBe(true);
+  it('should return false if feature flag is disabled', () => {
+    mockAppStore.setFlag('featureB', false);
+    expect(service.isEnabled('featureB')).toBe(false);
   });
 
-  it('should return false if the feature flag is disabled', () => {
-    mockAppStore.getConfig.mockReturnValue({ features: { test: false } });
-    expect(service.isEnabled('test')).toBe(false);
+  it('should return false if feature flag is missing', () => {
+    expect(service.isEnabled('missingFeature')).toBe(false);
   });
 
-  it('should return false if the feature flag is not present', () => {
-    mockAppStore.getConfig.mockReturnValue({ features: {} });
-    expect(service.isEnabled('missing')).toBe(false);
+  it('featureFlagSignal should reflect the current flag value', () => {
+    mockAppStore.setFlag('featureC', true);
+    const signal = service.featureFlagSignal('featureC');
+    expect(signal()).toBe(true);
   });
 
-  it('should return false if config is null', () => {
-    mockAppStore.getConfig.mockReturnValue(null);
-    expect(service.isEnabled('any')).toBe(false);
-  });
-
-  it('features signal should reflect the current features object (a, b)', () => {
-    mockAppStore.getConfig.mockReturnValue({ features: { a: true, b: false } });
-    expect(service.features()).toEqual({ a: true, b: false });
-  });
-
-  it('features signal should reflect the current features object (c)', () => {
-    mockAppStore.getConfig.mockReturnValue({ features: { c: true } });
-    expect(service.features()).toEqual({ c: true });
-  });
-
-  it('features signal should default to empty object if config or features is missing', () => {
-    mockAppStore.getConfig.mockReturnValue(null);
-    expect(service.features()).toEqual({});
-    mockAppStore.getConfig.mockReturnValue({});
-    expect(service.features()).toEqual({});
+  it('featureFlagSignal should be false for missing flag', () => {
+    const signal = service.featureFlagSignal('missingFeature');
+    expect(signal()).toBe(false);
   });
 });

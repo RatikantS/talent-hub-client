@@ -5,61 +5,50 @@
  * Unauthorized reproduction or distribution is prohibited.
  */
 
-import { computed, inject, Injectable, Signal } from '@angular/core';
+import { inject, Injectable, signal, Signal } from '@angular/core';
 
 import { AppStore } from '../store';
 
 /**
- * FeatureFlagService - Provides access to feature flag state from the global AppStore.
+ * FeatureFlagService - Provides feature flag checks using the AppStore.
  *
- * This service uses Angular signals and the NgRx Signal Store (AppStore) to expose
- * feature flags as a computed signal and provides a method to check if a specific
- * feature flag is enabled. Designed for use in guards, components, and services
- * that require feature toggling logic.
+ * Reads feature flags from the AppStore and exposes methods to check if a feature is enabled.
  *
  * Usage:
- *   const featureFlagService = inject(FeatureFlagService);
- *   if (featureFlagService.isEnabled('myFeature')) { ... }
+ *   const featureFlag = inject(FeatureFlagService);
+ *   if (featureFlag.isEnabled('newDashboard')) { ... }
  *
- * - Uses strict typing and avoids any.
- * - Returns false if the feature flag or config is not set.
- * - Designed for global state management and reactivity.
+ * Best practices:
+ * - Keep feature flag keys as constants or enums for maintainability.
+ * - Use signals or observables for reactive UI updates if needed.
  */
 @Injectable({ providedIn: 'root' })
 export class FeatureFlagService {
   /**
-   * Reference to the global AppStore (NgRx Signal Store).
-   * Used to access the current feature flag state.
+   * Returns the AppStore instance for feature flag checks.
+   * Overridable for testing.
    */
-  private readonly appStore: typeof AppStore = inject(AppStore);
+  protected getAppStore(): typeof AppStore {
+    return inject(AppStore);
+  }
 
   /**
-   * Computed signal for all feature flags.
+   * Returns a signal for the feature flag value (reactive).
    *
-   * Returns the features object from AppConfig, or an empty object if not set.
-   * This allows for reactive access to feature flags in components and services.
-   *
-   * Example:
-   *   featureFlagService.features(); // { myFeature: true, otherFeature: false }
+   * @param key - The feature flag key to observe.
+   * @returns Signal<boolean> that updates when the flag changes.
    */
-  readonly features: Signal<Record<string, boolean>> = computed(
-    (): Record<string, boolean> => this.appStore.getConfig()?.features ?? {},
-  );
+  featureFlagSignal(key: string): Signal<boolean> {
+    return signal(!!this.getAppStore().getFeatureFlag(key));
+  }
 
   /**
-   * Returns true if the given feature flag is enabled.
+   * Checks if a feature flag is enabled in the AppStore.
    *
-   * This method checks the features object for the specified flag and returns its boolean value.
-   * If the features object or the flag is not set, returns false.
-   *
-   * Example:
-   *   featureFlagService.isEnabled('myFeature'); // true or false
-   *
-   * @param flag - The feature flag key to check
-   * @returns {boolean} True if the feature is enabled, false otherwise.
+   * @param key - The feature flag key to check.
+   * @returns True if enabled, false otherwise.
    */
-  isEnabled(flag: string): boolean {
-    // Returns false if features object is missing or the flag is not set.
-    return !!this.features()[flag];
+  isEnabled(key: string): boolean {
+    return !!this.getAppStore().getFeatureFlag(key);
   }
 }

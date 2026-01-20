@@ -6,3 +6,4 @@
  */
 
 export * from './app.util';
+export * from './platform.util';
