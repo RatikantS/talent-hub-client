@@ -12,7 +12,20 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    setupFiles: './test-setup.ts',
+    setupFiles: ['./test-setup.ts'],
     environment: 'jsdom',
+    coverage: {
+      provider: 'v8',
+      reportsDirectory: './coverage/talent-hub-ui',
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/public-api.ts',
+        '**/index.ts',
+        '**/*.spec.ts',
+        '**/*.d.ts',
+        '**/talent-hub-core/**',
+      ],
+    },
   },
 });

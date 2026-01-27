@@ -8,9 +8,9 @@
  * @version 1.0.0
  */
 
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Injector, runInInjectionContext } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SanitizePipe } from '../pipes';
 

@@ -8,161 +8,182 @@
  * @version 1.0.0
  */
 
-import { beforeEach, describe, expect, it } from 'vitest';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Injector, runInInjectionContext } from '@angular/core';
+import { NgControl } from '@angular/forms';
 
 import { TrimInputDirective } from '../directives';
 
-@Component({
-  selector: 'th-test-input-host',
-  template: `<input thTrimInput [formControl]="control" />`,
-  imports: [TrimInputDirective, ReactiveFormsModule],
-})
-class TestHostComponent {
-  control = new FormControl('');
-}
-
-@Component({
-  selector: 'th-test-textarea-host',
-  template: `<textarea thTrimInput [formControl]="control"></textarea>`,
-  imports: [TrimInputDirective, ReactiveFormsModule],
-})
-class TestTextareaHostComponent {
-  control = new FormControl('');
-}
-
 describe('TrimInputDirective', () => {
-  describe('with input element', () => {
-    let fixture: ComponentFixture<TestHostComponent>;
-    let inputElement: HTMLInputElement;
-    let component: TestHostComponent;
+  let directive: TrimInputDirective;
+  let injector: Injector;
+  let mockNgControl: { value: unknown; control: { setValue: ReturnType<typeof vi.fn> } | null };
 
-    beforeEach(async () => {
-      await TestBed.configureTestingModule({
-        imports: [TestHostComponent],
-      }).compileComponents();
+  beforeEach(() => {
+    mockNgControl = {
+      value: '',
+      control: {
+        setValue: vi.fn(),
+      },
+    };
 
-      fixture = TestBed.createComponent(TestHostComponent);
-      component = fixture.componentInstance;
-      fixture.detectChanges();
-      inputElement = fixture.nativeElement.querySelector('input');
+    injector = Injector.create({
+      providers: [{ provide: NgControl, useValue: mockNgControl }],
     });
 
-    describe('trimming on blur', () => {
-      it('should trim leading whitespace on blur', () => {
-        component.control.setValue('   hello');
-        inputElement.dispatchEvent(new Event('blur'));
-        fixture.detectChanges();
-        expect(component.control.value).toBe('hello');
-      });
-
-      it('should trim trailing whitespace on blur', () => {
-        component.control.setValue('hello   ');
-        inputElement.dispatchEvent(new Event('blur'));
-        fixture.detectChanges();
-        expect(component.control.value).toBe('hello');
-      });
-
-      it('should trim both leading and trailing whitespace on blur', () => {
-        component.control.setValue('   hello   ');
-        inputElement.dispatchEvent(new Event('blur'));
-        fixture.detectChanges();
-        expect(component.control.value).toBe('hello');
-      });
-
-      it('should preserve internal whitespace', () => {
-        component.control.setValue('   hello   world   ');
-        inputElement.dispatchEvent(new Event('blur'));
-        fixture.detectChanges();
-        expect(component.control.value).toBe('hello   world');
-      });
-
-      it('should handle tabs and newlines', () => {
-        component.control.setValue('\t\nhello\t\n');
-        inputElement.dispatchEvent(new Event('blur'));
-        fixture.detectChanges();
-        expect(component.control.value).toBe('hello');
-      });
-    });
-
-    describe('no change scenarios', () => {
-      it('should not update value if already trimmed', () => {
-        component.control.setValue('hello');
-        const originalValue = component.control.value;
-        inputElement.dispatchEvent(new Event('blur'));
-        fixture.detectChanges();
-        expect(component.control.value).toBe(originalValue);
-      });
-
-      it('should handle empty string', () => {
-        component.control.setValue('');
-        inputElement.dispatchEvent(new Event('blur'));
-        fixture.detectChanges();
-        expect(component.control.value).toBe('');
-      });
-
-      it('should handle null value', () => {
-        component.control.setValue(null);
-        inputElement.dispatchEvent(new Event('blur'));
-        fixture.detectChanges();
-        expect(component.control.value).toBe(null);
-      });
-    });
-
-    describe('edge cases', () => {
-      it('should handle whitespace-only string', () => {
-        component.control.setValue('     ');
-        inputElement.dispatchEvent(new Event('blur'));
-        fixture.detectChanges();
-        expect(component.control.value).toBe('');
-      });
-
-      it('should handle single character', () => {
-        component.control.setValue(' a ');
-        inputElement.dispatchEvent(new Event('blur'));
-        fixture.detectChanges();
-        expect(component.control.value).toBe('a');
-      });
-
-      it('should handle unicode whitespace', () => {
-        component.control.setValue('  hello world  ');
-        inputElement.dispatchEvent(new Event('blur'));
-        fixture.detectChanges();
-        expect(component.control.value).toBe('hello world');
-      });
+    runInInjectionContext(injector, () => {
+      directive = new TrimInputDirective();
     });
   });
 
-  describe('with textarea element', () => {
-    let fixture: ComponentFixture<TestTextareaHostComponent>;
-    let textareaElement: HTMLTextAreaElement;
-    let component: TestTextareaHostComponent;
+  it('should be defined', () => {
+    expect(TrimInputDirective).toBeDefined();
+    expect(directive).toBeDefined();
+  });
 
-    beforeEach(async () => {
-      await TestBed.configureTestingModule({
-        imports: [TestTextareaHostComponent],
-      }).compileComponents();
+  describe('onBlur - trimming behavior', () => {
+    it('should trim leading whitespace on blur', () => {
+      mockNgControl.value = '   hello';
 
-      fixture = TestBed.createComponent(TestTextareaHostComponent);
-      component = fixture.componentInstance;
-      fixture.detectChanges();
-      textareaElement = fixture.nativeElement.querySelector('textarea');
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).toHaveBeenCalledWith('hello');
     });
 
-    it('should trim whitespace in textarea on blur', () => {
-      component.control.setValue('   multiline\ntext   ');
-      textareaElement.dispatchEvent(new Event('blur'));
-      fixture.detectChanges();
-      expect(component.control.value).toBe('multiline\ntext');
+    it('should trim trailing whitespace on blur', () => {
+      mockNgControl.value = 'hello   ';
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).toHaveBeenCalledWith('hello');
+    });
+
+    it('should trim both leading and trailing whitespace on blur', () => {
+      mockNgControl.value = '   hello   ';
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).toHaveBeenCalledWith('hello');
+    });
+
+    it('should preserve internal whitespace', () => {
+      mockNgControl.value = '   hello   world   ';
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).toHaveBeenCalledWith('hello   world');
+    });
+
+    it('should handle tabs and newlines', () => {
+      mockNgControl.value = '\t\nhello\t\n';
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).toHaveBeenCalledWith('hello');
+    });
+  });
+
+  describe('onBlur - no change scenarios', () => {
+    it('should not update value if already trimmed', () => {
+      mockNgControl.value = 'hello';
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).not.toHaveBeenCalled();
+    });
+
+    it('should handle empty string', () => {
+      mockNgControl.value = '';
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).not.toHaveBeenCalled();
+    });
+
+    it('should handle null value', () => {
+      mockNgControl.value = null;
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).not.toHaveBeenCalled();
+    });
+
+    it('should handle undefined value', () => {
+      mockNgControl.value = undefined;
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('onBlur - edge cases', () => {
+    it('should handle whitespace-only string', () => {
+      mockNgControl.value = '     ';
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).toHaveBeenCalledWith('');
+    });
+
+    it('should handle single character', () => {
+      mockNgControl.value = ' a ';
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).toHaveBeenCalledWith('a');
+    });
+
+    it('should handle multiline text', () => {
+      mockNgControl.value = '   multiline\ntext   ';
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).toHaveBeenCalledWith('multiline\ntext');
     });
 
     it('should preserve internal newlines', () => {
-      component.control.setValue('   line1\n\nline2   ');
-      textareaElement.dispatchEvent(new Event('blur'));
-      fixture.detectChanges();
-      expect(component.control.value).toBe('line1\n\nline2');
+      mockNgControl.value = '   line1\n\nline2   ';
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).toHaveBeenCalledWith('line1\n\nline2');
+    });
+  });
+
+  describe('onBlur - non-string values', () => {
+    it('should not process number value', () => {
+      mockNgControl.value = 123;
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).not.toHaveBeenCalled();
+    });
+
+    it('should not process object value', () => {
+      mockNgControl.value = { name: 'test' };
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).not.toHaveBeenCalled();
+    });
+
+    it('should not process array value', () => {
+      mockNgControl.value = ['test'];
+
+      directive.onBlur();
+
+      expect(mockNgControl.control?.setValue).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('onBlur - control availability', () => {
+    it('should handle missing control gracefully', () => {
+      mockNgControl.value = '  test  ';
+      mockNgControl.control = null;
+
+      // Should not throw
+      expect(() => directive.onBlur()).not.toThrow();
     });
   });
 });

@@ -11,8 +11,9 @@
 /**
  * Directives Module - Barrel Export
  *
- * This file serves as the public API for all Angular directives in the talent-hub-ui library.
- * Import directives from this index for cleaner imports throughout the application.
+ * This file serves as the public API for all Angular directives and utility functions
+ * in the talent-hub-ui library. Import directives from this index for cleaner imports
+ * throughout the application.
  *
  * @usageNotes
  *
@@ -20,7 +21,7 @@
  *
  * ```typescript
  * // Import individual directives
- * import { HasRoleDirective, NumericOnlyDirective } from '@aspect/talent-hub-ui';
+ * import { HasRoleDirective, NumericOnlyDirective } from '@talent-hub/ui/directives';
  *
  * // Use in standalone components
  * @Component({
@@ -30,6 +31,17 @@
  *     <input thNumericOnly formControlName="age" />
  *   `
  * })
+ * ```
+ *
+ * ### Importing Utility Functions
+ *
+ * ```typescript
+ * // Import utility functions for programmatic access control
+ * import { checkPermissions, checkRoles } from '@talent-hub/ui/directives';
+ *
+ * // Use in services or components
+ * const canEdit = checkPermissions('edit', false, authStore.hasPermission);
+ * const isAdmin = checkRoles('admin', false, authStore.hasRole);
  * ```
  *
  * ### Available Directives
@@ -43,6 +55,13 @@
  * | `HasRoleDirective`       | `*thHasRole`            | Conditionally render by role              |
  * | `NumericOnlyDirective`   | `input[thNumericOnly]`  | Restrict input to numeric characters      |
  * | `TrimInputDirective`     | `input[thTrimInput]`    | Auto-trim whitespace on blur              |
+ *
+ * ### Available Utility Functions
+ *
+ * | Function           | Purpose                                          |
+ * |--------------------|--------------------------------------------------|
+ * | `checkPermissions` | Check if user has required permission(s)         |
+ * | `checkRoles`       | Check if user has required role(s)               |
  *
  * ### Directive Categories
  *

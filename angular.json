@@ -1319,7 +1319,8 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "tsConfig": "libs/talent-hub-ui/tsconfig.spec.json"
+            "tsConfig": "libs/talent-hub-ui/tsconfig.spec.json",
+            "runnerConfig": "libs/talent-hub-ui/vitest.config.ts"
           }
         },
         "storybook": {

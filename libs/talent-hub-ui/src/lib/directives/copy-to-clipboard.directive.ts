@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import { Directive, inject, input, output } from '@angular/core';
+import { Directive, inject, input, output, OutputEmitterRef } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 
 /**
@@ -115,10 +115,8 @@ export class CopyToClipboardDirective {
   /**
    * The text content to copy to the clipboard when the element is clicked.
    *
-   * This is a required input - if no text is provided, the copy operation will
+   * If no text is provided or the text is empty, the copy operation will
    * fail and emit an error result.
-   *
-   * @required
    *
    * @example
    * ```html
@@ -132,7 +130,7 @@ export class CopyToClipboardDirective {
    * <button thCopyToClipboard [copyText]="getFormattedData()">Copy Data</button>
    * ```
    */
-  readonly copyText = input.required<string>();
+  readonly copyText = input<string>('');
 
   /**
    * Emitted after a copy operation completes, whether successful or not.
@@ -153,7 +151,7 @@ export class CopyToClipboardDirective {
    * }
    * ```
    */
-  readonly copied = output<CopyResult>();
+  readonly copied: OutputEmitterRef<CopyResult> = output<CopyResult>();
 
   /**
    * Reference to the document for DOM operations in the fallback method.
@@ -161,7 +159,7 @@ export class CopyToClipboardDirective {
    *
    * @internal
    */
-  private readonly document = inject(DOCUMENT);
+  private readonly document: Document = inject(DOCUMENT);
 
   /**
    * Handles the click event to copy text to the clipboard.
@@ -185,8 +183,10 @@ export class CopyToClipboardDirective {
    * ```
    */
   async onClick(): Promise<void> {
-    const text = this.copyText();
+    // Get the text to copy from the input signal
+    const text: string = this.copyText();
 
+    // Validate that text is provided
     if (!text) {
       this.copied.emit({
         success: false,
@@ -197,19 +197,22 @@ export class CopyToClipboardDirective {
     }
 
     try {
-      // Try modern Clipboard API first
+      // Try modern Clipboard API first (requires HTTPS in most browsers)
+      // This is the preferred method as it's more secure and doesn't require DOM manipulation
       if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
         await navigator.clipboard.writeText(text);
         this.copied.emit({ success: true, text });
       } else {
-        // Fallback for older browsers
+        // Fallback for older browsers that don't support Clipboard API
         this.copyWithFallback(text);
       }
     } catch {
-      // If Clipboard API fails, try fallback
+      // If Clipboard API fails (e.g., permission denied, non-secure context),
+      // attempt the legacy fallback method
       try {
         this.copyWithFallback(text);
       } catch (fallbackError) {
+        // Both methods failed - emit error result
         this.copied.emit({
           success: false,
           text,
@@ -224,28 +227,51 @@ export class CopyToClipboardDirective {
    *
    * This method creates a hidden textarea, selects its content,
    * and uses document.execCommand('copy') for older browser support.
+   * This is the legacy approach used when the modern Clipboard API
+   * is not available or fails.
    *
    * @param text - The text to copy to clipboard
    * @throws Error if the copy operation fails
+   *
+   * @remarks
+   * This method uses the deprecated `document.execCommand('copy')` API.
+   * While deprecated, it's kept as a fallback for older browsers that don't
+   * support the modern Clipboard API (navigator.clipboard). The modern API
+   * is always tried first in the onClick() method.
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand
+   *
+   * @internal
    */
   private copyWithFallback(text: string): void {
-    const textarea = this.document.createElement('textarea');
+    // Create a temporary textarea element to hold the text
+    const textarea: HTMLTextAreaElement = this.document.createElement('textarea');
     textarea.value = text;
 
-    // Prevent scrolling to bottom of page
+    // Position the textarea off-screen to prevent visual disruption
+    // Using fixed positioning prevents scrolling when the element is added
     textarea.style.position = 'fixed';
     textarea.style.left = '-9999px';
     textarea.style.top = '0';
+
+    // Make the textarea readonly to prevent keyboard from showing on mobile
     textarea.setAttribute('readonly', '');
+
+    // Hide from screen readers since this is a temporary element
     textarea.setAttribute('aria-hidden', 'true');
 
+    // Add the textarea to the DOM (required for selection to work)
     this.document.body.appendChild(textarea);
 
     try {
+      // Select all text in the textarea
       textarea.select();
       textarea.setSelectionRange(0, text.length);
 
-      const successful = this.document.execCommand('copy');
+      // Execute the copy command using the legacy execCommand API
+      // NOTE: execCommand('copy') is deprecated but kept for legacy browser support
+      // Modern browsers should use navigator.clipboard.writeText() instead (tried first in onClick)
+      const successful: boolean = this.document.execCommand('copy');
 
       if (successful) {
         this.copied.emit({ success: true, text });
@@ -253,6 +279,7 @@ export class CopyToClipboardDirective {
         throw new Error('execCommand copy failed');
       }
     } finally {
+      // Always clean up by removing the temporary textarea from the DOM
       this.document.body.removeChild(textarea);
     }
   }

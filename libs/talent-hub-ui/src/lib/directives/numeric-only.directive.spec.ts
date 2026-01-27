@@ -9,92 +9,122 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Injector, runInInjectionContext } from '@angular/core';
 
 import { NumericOnlyDirective } from '../directives';
 
-@Component({
-  template: `<input
-    thNumericOnly
-    [allowDecimal]="allowDecimal()"
-    [allowNegative]="allowNegative()"
-  />`,
-  imports: [NumericOnlyDirective],
-})
-class TestHostComponent {
-  allowDecimal = signal(false);
-  allowNegative = signal(false);
-}
-
 describe('NumericOnlyDirective', () => {
-  let fixture: ComponentFixture<TestHostComponent>;
-  let inputElement: HTMLInputElement;
-  let component: TestHostComponent;
+  let directive: NumericOnlyDirective;
+  let injector: Injector;
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [TestHostComponent],
-    }).compileComponents();
+  // Navigation keys that should always be allowed
+  const NAVIGATION_KEYS = [
+    'Backspace',
+    'Delete',
+    'Tab',
+    'Escape',
+    'Enter',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End',
+  ];
 
-    fixture = TestBed.createComponent(TestHostComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-    inputElement = fixture.nativeElement.querySelector('input');
+  // Clipboard shortcut keys
+  const CLIPBOARD_KEYS = ['a', 'A', 'c', 'C', 'v', 'V', 'x', 'X'];
+
+  beforeEach(() => {
+    injector = Injector.create({ providers: [] });
+    runInInjectionContext(injector, () => {
+      directive = new NumericOnlyDirective();
+    });
   });
 
   /**
-   * Helper to create and dispatch a keyboard event
+   * Helper to create a keyboard event with preventDefault spy and target
    */
   function createKeyboardEvent(
     key: string,
+    value = '',
+    selectionStart = 0,
     options: Partial<KeyboardEventInit> = {},
   ): KeyboardEvent {
-    return new KeyboardEvent('keydown', {
+    const event = new KeyboardEvent('keydown', {
       key,
       bubbles: true,
       cancelable: true,
       ...options,
     });
-  }
 
-  /**
-   * Helper to create and dispatch a paste event
-   * Uses a custom Event since ClipboardEvent is not available in Node.js/Vitest
-   */
-  function createPasteEvent(text: string): Event {
-    const event = new Event('paste', {
-      bubbles: true,
-      cancelable: true,
-    });
-    // Add clipboardData property to mimic ClipboardEvent
-    Object.defineProperty(event, 'clipboardData', {
+    // Mock the target input element
+    Object.defineProperty(event, 'target', {
       value: {
-        getData: vi.fn().mockReturnValue(text),
+        value,
+        selectionStart,
       },
       writable: false,
     });
+
+    vi.spyOn(event, 'preventDefault');
     return event;
   }
 
-  describe('numeric character handling', () => {
+  /**
+   * Helper to create a clipboard event with preventDefault spy
+   * Uses Event since ClipboardEvent is not available in jsdom
+   */
+  function createClipboardEvent(pastedText: string | undefined): ClipboardEvent {
+    const clipboardData = {
+      getData: vi.fn().mockReturnValue(pastedText ?? ''),
+    } as unknown as DataTransfer;
+
+    const event = new Event('paste', {
+      bubbles: true,
+      cancelable: true,
+    }) as ClipboardEvent;
+
+    Object.defineProperty(event, 'clipboardData', {
+      value: pastedText !== undefined ? clipboardData : null,
+      writable: false,
+    });
+
+    vi.spyOn(event, 'preventDefault');
+    return event;
+  }
+
+  it('should be defined', () => {
+    expect(NumericOnlyDirective).toBeDefined();
+    expect(directive).toBeDefined();
+  });
+
+  it('should have allowDecimal default to false', () => {
+    expect(directive.allowDecimal()).toBe(false);
+  });
+
+  it('should have allowNegative default to false', () => {
+    expect(directive.allowNegative()).toBe(false);
+  });
+
+  describe('onKeyDown - numeric character handling', () => {
     it('should allow all digit keys (0-9)', () => {
       const digits = '0123456789'.split('');
       digits.forEach((digit) => {
         const event = createKeyboardEvent(digit);
-        inputElement.dispatchEvent(event);
-        expect(event.defaultPrevented).toBe(false);
+        directive.onKeyDown(event);
+        expect(event.preventDefault).not.toHaveBeenCalled();
       });
     });
   });
 
-  describe('non-numeric character blocking', () => {
+  describe('onKeyDown - non-numeric character blocking', () => {
     it('should block alphabetic characters (a-z)', () => {
       const letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
       letters.forEach((letter) => {
         const event = createKeyboardEvent(letter);
-        inputElement.dispatchEvent(event);
-        expect(event.defaultPrevented).toBe(true);
+        directive.onKeyDown(event);
+        expect(event.preventDefault).toHaveBeenCalled();
       });
     });
 
@@ -102,8 +132,8 @@ describe('NumericOnlyDirective', () => {
       const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
       letters.forEach((letter) => {
         const event = createKeyboardEvent(letter);
-        inputElement.dispatchEvent(event);
-        expect(event.defaultPrevented).toBe(true);
+        directive.onKeyDown(event);
+        expect(event.preventDefault).toHaveBeenCalled();
       });
     });
 
@@ -111,275 +141,245 @@ describe('NumericOnlyDirective', () => {
       const specialChars = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '=', '+', ' '];
       specialChars.forEach((char) => {
         const event = createKeyboardEvent(char);
-        inputElement.dispatchEvent(event);
-        expect(event.defaultPrevented).toBe(true);
+        directive.onKeyDown(event);
+        expect(event.preventDefault).toHaveBeenCalled();
       });
     });
   });
 
-  describe('decimal point handling', () => {
-    it('should block decimal point when allowDecimal is false (default)', () => {
+  describe('onKeyDown - decimal point handling', () => {
+    it('should block decimal point when allowDecimal is false', () => {
       const event = createKeyboardEvent('.');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
+      directive.onKeyDown(event);
+      expect(event.preventDefault).toHaveBeenCalled();
     });
 
     it('should allow decimal point when allowDecimal is true', () => {
-      component.allowDecimal.set(true);
-      fixture.detectChanges();
-
-      const event = createKeyboardEvent('.');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
+      runInInjectionContext(injector, () => {
+        directive = new NumericOnlyDirective();
+        Object.defineProperty(directive, 'allowDecimal', { value: () => true });
+      });
+      const event = createKeyboardEvent('.', '', 0);
+      directive.onKeyDown(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
     });
 
     it('should block second decimal point when one already exists', () => {
-      component.allowDecimal.set(true);
-      fixture.detectChanges();
-
-      inputElement.value = '123.45';
-      const event = createKeyboardEvent('.');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
-    });
-
-    it('should allow decimal point when input is empty', () => {
-      component.allowDecimal.set(true);
-      fixture.detectChanges();
-
-      inputElement.value = '';
-      const event = createKeyboardEvent('.');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
+      runInInjectionContext(injector, () => {
+        directive = new NumericOnlyDirective();
+        Object.defineProperty(directive, 'allowDecimal', { value: () => true });
+      });
+      const event = createKeyboardEvent('.', '123.45', 6);
+      directive.onKeyDown(event);
+      expect(event.preventDefault).toHaveBeenCalled();
     });
   });
 
-  describe('negative sign handling', () => {
-    it('should block negative sign when allowNegative is false (default)', () => {
-      const event = createKeyboardEvent('-');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
+  describe('onKeyDown - negative sign handling', () => {
+    it('should block negative sign when allowNegative is false', () => {
+      const event = createKeyboardEvent('-', '', 0);
+      directive.onKeyDown(event);
+      expect(event.preventDefault).toHaveBeenCalled();
     });
 
     it('should allow negative sign at position 0 when allowNegative is true', () => {
-      component.allowNegative.set(true);
-      fixture.detectChanges();
-
-      inputElement.value = '';
-      inputElement.setSelectionRange(0, 0);
-      const event = createKeyboardEvent('-');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
+      runInInjectionContext(injector, () => {
+        directive = new NumericOnlyDirective();
+        Object.defineProperty(directive, 'allowNegative', { value: () => true });
+      });
+      const event = createKeyboardEvent('-', '', 0);
+      directive.onKeyDown(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
     });
 
     it('should block negative sign when not at position 0', () => {
-      component.allowNegative.set(true);
-      fixture.detectChanges();
-
-      inputElement.value = '123';
-      inputElement.setSelectionRange(2, 2);
-      const event = createKeyboardEvent('-');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
+      runInInjectionContext(injector, () => {
+        directive = new NumericOnlyDirective();
+        Object.defineProperty(directive, 'allowNegative', { value: () => true });
+      });
+      const event = createKeyboardEvent('-', '123', 2);
+      directive.onKeyDown(event);
+      expect(event.preventDefault).toHaveBeenCalled();
     });
 
     it('should block second negative sign when one already exists', () => {
-      component.allowNegative.set(true);
-      fixture.detectChanges();
-
-      inputElement.value = '-123';
-      inputElement.setSelectionRange(0, 0);
-      const event = createKeyboardEvent('-');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
+      runInInjectionContext(injector, () => {
+        directive = new NumericOnlyDirective();
+        Object.defineProperty(directive, 'allowNegative', { value: () => true });
+      });
+      const event = createKeyboardEvent('-', '-123', 0);
+      directive.onKeyDown(event);
+      expect(event.preventDefault).toHaveBeenCalled();
     });
   });
 
-  describe('navigation keys', () => {
-    const navigationKeys = [
-      'Backspace',
-      'Delete',
-      'Tab',
-      'Escape',
-      'Enter',
-      'ArrowLeft',
-      'ArrowRight',
-      'ArrowUp',
-      'ArrowDown',
-      'Home',
-      'End',
-    ];
-
-    navigationKeys.forEach((key) => {
+  describe('onKeyDown - navigation keys', () => {
+    NAVIGATION_KEYS.forEach((key) => {
       it(`should allow ${key} key`, () => {
         const event = createKeyboardEvent(key);
-        inputElement.dispatchEvent(event);
-        expect(event.defaultPrevented).toBe(false);
+        directive.onKeyDown(event);
+        expect(event.preventDefault).not.toHaveBeenCalled();
       });
     });
   });
 
-  describe('clipboard shortcuts with Ctrl key', () => {
-    const clipboardKeys = ['a', 'A', 'c', 'C', 'v', 'V', 'x', 'X'];
-
-    clipboardKeys.forEach((key) => {
+  describe('onKeyDown - clipboard shortcuts with Ctrl key', () => {
+    CLIPBOARD_KEYS.forEach((key) => {
       it(`should allow Ctrl+${key}`, () => {
-        const event = createKeyboardEvent(key, { ctrlKey: true });
-        inputElement.dispatchEvent(event);
-        expect(event.defaultPrevented).toBe(false);
+        const event = createKeyboardEvent(key, '', 0, { ctrlKey: true });
+        directive.onKeyDown(event);
+        expect(event.preventDefault).not.toHaveBeenCalled();
       });
     });
   });
 
-  describe('clipboard shortcuts with Meta key (Mac)', () => {
-    const clipboardKeys = ['a', 'A', 'c', 'C', 'v', 'V', 'x', 'X'];
-
-    clipboardKeys.forEach((key) => {
+  describe('onKeyDown - clipboard shortcuts with Meta key (Mac)', () => {
+    CLIPBOARD_KEYS.forEach((key) => {
       it(`should allow Cmd+${key} (Meta)`, () => {
-        const event = createKeyboardEvent(key, { metaKey: true });
-        inputElement.dispatchEvent(event);
-        expect(event.defaultPrevented).toBe(false);
+        const event = createKeyboardEvent(key, '', 0, { metaKey: true });
+        directive.onKeyDown(event);
+        expect(event.preventDefault).not.toHaveBeenCalled();
       });
     });
   });
 
-  describe('paste event handling - integers only', () => {
-    it('should allow paste of numeric text', () => {
-      const event = createPasteEvent('12345');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
+  describe('onPaste - integers only (default)', () => {
+    it('should allow paste of integer', () => {
+      const event = createClipboardEvent('123');
+      directive.onPaste(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
     });
 
     it('should block paste containing letters', () => {
-      const event = createPasteEvent('123abc');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
+      const event = createClipboardEvent('123abc');
+      directive.onPaste(event);
+      expect(event.preventDefault).toHaveBeenCalled();
     });
 
-    it('should block paste containing special characters', () => {
-      const event = createPasteEvent('123@456');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
+    it('should block paste containing decimal', () => {
+      const event = createClipboardEvent('123.45');
+      directive.onPaste(event);
+      expect(event.preventDefault).toHaveBeenCalled();
     });
 
-    it('should block paste containing decimal when allowDecimal is false', () => {
-      const event = createPasteEvent('123.45');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
+    it('should block paste containing negative sign', () => {
+      const event = createClipboardEvent('-123');
+      directive.onPaste(event);
+      expect(event.preventDefault).toHaveBeenCalled();
     });
 
-    it('should block paste containing negative when allowNegative is false', () => {
-      const event = createPasteEvent('-123');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
-    });
-  });
-
-  describe('paste event handling - with decimals', () => {
-    beforeEach(() => {
-      component.allowDecimal.set(true);
-      fixture.detectChanges();
-    });
-
-    it('should allow paste of decimal number', () => {
-      const event = createPasteEvent('123.45');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
-    });
-
-    it('should allow paste of number starting with decimal', () => {
-      const event = createPasteEvent('.45');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
-    });
-
-    it('should block paste with multiple decimal points', () => {
-      const event = createPasteEvent('12.34.56');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
-    });
-  });
-
-  describe('paste event handling - with negatives', () => {
-    beforeEach(() => {
-      component.allowNegative.set(true);
-      fixture.detectChanges();
-    });
-
-    it('should allow paste of negative number', () => {
-      const event = createPasteEvent('-123');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
-    });
-
-    it('should block paste with negative in wrong position', () => {
-      const event = createPasteEvent('12-3');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
-    });
-  });
-
-  describe('paste event handling - with decimals and negatives', () => {
-    beforeEach(() => {
-      component.allowDecimal.set(true);
-      component.allowNegative.set(true);
-      fixture.detectChanges();
-    });
-
-    it('should allow paste of negative decimal number', () => {
-      const event = createPasteEvent('-123.45');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
-    });
-
-    it('should allow paste of negative number with leading decimal', () => {
-      const event = createPasteEvent('-.45');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
-    });
-
-    it('should block invalid format', () => {
-      const event = createPasteEvent('-12.34.56');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
-    });
-  });
-
-  describe('paste event edge cases', () => {
-    it('should allow empty paste', () => {
-      const event = createPasteEvent('');
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
+    it('should handle empty paste', () => {
+      const event = createClipboardEvent('');
+      directive.onPaste(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
     });
 
     it('should handle paste with no clipboard data gracefully', () => {
-      const event = new Event('paste', {
-        bubbles: true,
-        cancelable: true,
-      });
-      inputElement.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
+      const event = createClipboardEvent(undefined);
+      directive.onPaste(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
     });
   });
 
-  describe('combined configurations', () => {
-    it('should allow decimal and negative together', () => {
-      component.allowDecimal.set(true);
-      component.allowNegative.set(true);
-      fixture.detectChanges();
+  describe('onPaste - with decimals allowed', () => {
+    beforeEach(() => {
+      runInInjectionContext(injector, () => {
+        directive = new NumericOnlyDirective();
+        Object.defineProperty(directive, 'allowDecimal', { value: () => true });
+        Object.defineProperty(directive, 'allowNegative', { value: () => false });
+      });
+    });
 
-      // Allow negative at start
-      inputElement.value = '';
-      inputElement.setSelectionRange(0, 0);
-      const negEvent = createKeyboardEvent('-');
-      inputElement.dispatchEvent(negEvent);
-      expect(negEvent.defaultPrevented).toBe(false);
+    it('should allow paste of decimal number', () => {
+      const event = createClipboardEvent('123.45');
+      directive.onPaste(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
 
-      // Allow decimal
-      inputElement.value = '-123';
-      const decEvent = createKeyboardEvent('.');
-      inputElement.dispatchEvent(decEvent);
-      expect(decEvent.defaultPrevented).toBe(false);
+    it('should allow paste starting with decimal', () => {
+      const event = createClipboardEvent('.45');
+      directive.onPaste(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it('should block paste with multiple decimals', () => {
+      const event = createClipboardEvent('12.34.56');
+      directive.onPaste(event);
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+  });
+
+  describe('onPaste - with negatives allowed', () => {
+    beforeEach(() => {
+      runInInjectionContext(injector, () => {
+        directive = new NumericOnlyDirective();
+        Object.defineProperty(directive, 'allowDecimal', { value: () => false });
+        Object.defineProperty(directive, 'allowNegative', { value: () => true });
+      });
+    });
+
+    it('should allow paste of negative integer', () => {
+      const event = createClipboardEvent('-123');
+      directive.onPaste(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it('should block paste with negative in wrong position', () => {
+      const event = createClipboardEvent('12-3');
+      directive.onPaste(event);
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+  });
+
+  describe('onPaste - with both decimals and negatives allowed', () => {
+    beforeEach(() => {
+      runInInjectionContext(injector, () => {
+        directive = new NumericOnlyDirective();
+        Object.defineProperty(directive, 'allowDecimal', { value: () => true });
+        Object.defineProperty(directive, 'allowNegative', { value: () => true });
+      });
+    });
+
+    it('should allow paste of negative decimal', () => {
+      const event = createClipboardEvent('-123.45');
+      directive.onPaste(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it('should allow paste of negative starting with decimal', () => {
+      const event = createClipboardEvent('-.45');
+      directive.onPaste(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it('should block paste of invalid format', () => {
+      const event = createClipboardEvent('-12.34.56');
+      directive.onPaste(event);
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+  });
+
+  describe('combined options', () => {
+    it('should allow negative sign at position 0 with both options enabled', () => {
+      runInInjectionContext(injector, () => {
+        directive = new NumericOnlyDirective();
+        Object.defineProperty(directive, 'allowDecimal', { value: () => true });
+        Object.defineProperty(directive, 'allowNegative', { value: () => true });
+      });
+      const event = createKeyboardEvent('-', '', 0);
+      directive.onKeyDown(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it('should allow decimal after negative', () => {
+      runInInjectionContext(injector, () => {
+        directive = new NumericOnlyDirective();
+        Object.defineProperty(directive, 'allowDecimal', { value: () => true });
+        Object.defineProperty(directive, 'allowNegative', { value: () => true });
+      });
+      const event = createKeyboardEvent('.', '-123', 4);
+      directive.onKeyDown(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
     });
   });
 });

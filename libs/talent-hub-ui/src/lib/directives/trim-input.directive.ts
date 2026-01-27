@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import { Directive } from '@angular/core';
+import { Directive, inject } from '@angular/core';
 import { NgControl } from '@angular/forms';
 
 /**
@@ -73,13 +73,13 @@ export class TrimInputDirective {
   /**
    * Reference to the form control for reading and updating values.
    *
-   * Injected via constructor to access the associated NgControl instance.
+   * Injected using the inject() function to access the associated NgControl instance.
    * This allows the directive to work with both FormControl (reactive)
    * and NgModel (template-driven) bindings.
    *
    * @internal
    */
-  constructor(private readonly ngControl: NgControl) {}
+  private readonly ngControl: NgControl = inject(NgControl);
 
   /**
    * Handles the blur event to trim whitespace from the input value.

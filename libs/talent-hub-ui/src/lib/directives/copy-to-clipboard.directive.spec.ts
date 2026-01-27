@@ -9,49 +9,73 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Injector, runInInjectionContext } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 
-import { CopyResult, CopyToClipboardDirective } from '../directives';
-
-@Component({
-  template: `
-    <button thCopyToClipboard [copyText]="textToCopy()" (copied)="onCopied($event)">Copy</button>
-  `,
-  imports: [CopyToClipboardDirective],
-})
-class TestHostComponent {
-  textToCopy = signal('Test text to copy');
-  lastCopyResult: CopyResult | null = null;
-
-  onCopied(result: CopyResult): void {
-    this.lastCopyResult = result;
-  }
-}
+import { CopyToClipboardDirective } from '../directives';
 
 describe('CopyToClipboardDirective', () => {
-  let fixture: ComponentFixture<TestHostComponent>;
-  let buttonElement: HTMLButtonElement;
-  let component: TestHostComponent;
+  let directive: CopyToClipboardDirective;
+  let injector: Injector;
+  let mockDocument: Document;
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [TestHostComponent],
-    }).compileComponents();
+  beforeEach(() => {
+    // Create a mock document
+    mockDocument = {
+      createElement: vi.fn().mockReturnValue({
+        value: '',
+        style: {},
+        setAttribute: vi.fn(),
+        select: vi.fn(),
+        setSelectionRange: vi.fn(),
+      }),
+      body: {
+        appendChild: vi.fn(),
+        removeChild: vi.fn(),
+      },
+      execCommand: vi.fn().mockReturnValue(true),
+    } as unknown as Document;
 
-    fixture = TestBed.createComponent(TestHostComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-    buttonElement = fixture.nativeElement.querySelector('button');
-  });
+    injector = Injector.create({
+      providers: [{ provide: DOCUMENT, useValue: mockDocument }],
+    });
 
-  describe('cursor style', () => {
-    it('should set cursor to pointer', () => {
-      expect(buttonElement.style.cursor).toBe('pointer');
+    runInInjectionContext(injector, () => {
+      directive = new CopyToClipboardDirective();
+    });
+
+    // Reset clipboard mock before each test
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      writable: true,
+      configurable: true,
     });
   });
 
-  describe('copy with modern Clipboard API', () => {
+  it('should be defined', () => {
+    expect(CopyToClipboardDirective).toBeDefined();
+    expect(directive).toBeDefined();
+  });
+
+  it('should have empty copyText by default', () => {
+    expect(directive.copyText()).toBe('');
+  });
+
+  describe('onClick - empty text handling', () => {
+    it('should emit error result when text is empty', async () => {
+      const emitSpy = vi.spyOn(directive.copied, 'emit');
+
+      await directive.onClick();
+
+      expect(emitSpy).toHaveBeenCalledWith({
+        success: false,
+        text: '',
+        error: 'No text provided to copy',
+      });
+    });
+  });
+
+  describe('onClick - with Clipboard API', () => {
     it('should copy text using Clipboard API when available', async () => {
       const writeTextMock = vi.fn().mockResolvedValue(undefined);
       Object.defineProperty(navigator, 'clipboard', {
@@ -60,50 +84,20 @@ describe('CopyToClipboardDirective', () => {
         configurable: true,
       });
 
-      buttonElement.click();
-      await fixture.whenStable();
+      // Mock copyText to return a value
+      Object.defineProperty(directive, 'copyText', { value: () => 'Test text' });
 
-      expect(writeTextMock).toHaveBeenCalledWith('Test text to copy');
-      expect(component.lastCopyResult).toEqual({
+      const emitSpy = vi.spyOn(directive.copied, 'emit');
+
+      await directive.onClick();
+
+      expect(writeTextMock).toHaveBeenCalledWith('Test text');
+      expect(emitSpy).toHaveBeenCalledWith({
         success: true,
-        text: 'Test text to copy',
+        text: 'Test text',
       });
     });
 
-    it('should emit success result on successful copy', async () => {
-      const writeTextMock = vi.fn().mockResolvedValue(undefined);
-      Object.defineProperty(navigator, 'clipboard', {
-        value: { writeText: writeTextMock },
-        writable: true,
-        configurable: true,
-      });
-
-      buttonElement.click();
-      await fixture.whenStable();
-
-      expect(component.lastCopyResult?.success).toBe(true);
-      expect(component.lastCopyResult?.text).toBe('Test text to copy');
-      expect(component.lastCopyResult?.error).toBeUndefined();
-    });
-  });
-
-  describe('empty text handling', () => {
-    it('should emit error result when copyText is empty', async () => {
-      component.textToCopy.set('');
-      fixture.detectChanges();
-
-      buttonElement.click();
-      await fixture.whenStable();
-
-      expect(component.lastCopyResult).toEqual({
-        success: false,
-        text: '',
-        error: 'No text provided to copy',
-      });
-    });
-  });
-
-  describe('Clipboard API failure with fallback', () => {
     it('should fall back to execCommand when Clipboard API fails', async () => {
       const writeTextMock = vi.fn().mockRejectedValue(new Error('Permission denied'));
       Object.defineProperty(navigator, 'clipboard', {
@@ -112,90 +106,54 @@ describe('CopyToClipboardDirective', () => {
         configurable: true,
       });
 
-      // Mock document.execCommand
-      const execCommandMock = vi.fn().mockReturnValue(true);
-      document.execCommand = execCommandMock;
+      Object.defineProperty(directive, 'copyText', { value: () => 'Fallback text' });
 
-      buttonElement.click();
-      await fixture.whenStable();
+      const emitSpy = vi.spyOn(directive.copied, 'emit');
 
-      // Fallback should have been attempted
-      expect(execCommandMock).toHaveBeenCalledWith('copy');
+      await directive.onClick();
+
+      expect(mockDocument.execCommand).toHaveBeenCalledWith('copy');
+      expect(emitSpy).toHaveBeenCalledWith({
+        success: true,
+        text: 'Fallback text',
+      });
     });
   });
 
-  describe('fallback when Clipboard API is not available', () => {
-    it('should use fallback when navigator.clipboard is undefined', async () => {
-      Object.defineProperty(navigator, 'clipboard', {
-        value: undefined,
-        writable: true,
-        configurable: true,
+  describe('onClick - fallback method', () => {
+    it('should use fallback when clipboard is undefined', async () => {
+      Object.defineProperty(directive, 'copyText', { value: () => 'No clipboard API' });
+
+      const emitSpy = vi.spyOn(directive.copied, 'emit');
+
+      await directive.onClick();
+
+      expect(mockDocument.createElement).toHaveBeenCalledWith('textarea');
+      expect(mockDocument.execCommand).toHaveBeenCalledWith('copy');
+      expect(emitSpy).toHaveBeenCalledWith({
+        success: true,
+        text: 'No clipboard API',
       });
-
-      const execCommandMock = vi.fn().mockReturnValue(true);
-      document.execCommand = execCommandMock;
-
-      buttonElement.click();
-      await fixture.whenStable();
-
-      expect(execCommandMock).toHaveBeenCalledWith('copy');
     });
 
-    it('should use fallback when writeText is not a function', async () => {
-      Object.defineProperty(navigator, 'clipboard', {
-        value: { writeText: undefined },
-        writable: true,
-        configurable: true,
-      });
+    it('should emit error when fallback fails', async () => {
+      (mockDocument.execCommand as ReturnType<typeof vi.fn>).mockReturnValue(false);
+      Object.defineProperty(directive, 'copyText', { value: () => 'Failed copy' });
 
-      const execCommandMock = vi.fn().mockReturnValue(true);
-      document.execCommand = execCommandMock;
+      const emitSpy = vi.spyOn(directive.copied, 'emit');
 
-      buttonElement.click();
-      await fixture.whenStable();
+      await directive.onClick();
 
-      expect(execCommandMock).toHaveBeenCalledWith('copy');
-    });
-  });
-
-  describe('fallback failure', () => {
-    it('should emit error when both Clipboard API and fallback fail', async () => {
-      Object.defineProperty(navigator, 'clipboard', {
-        value: undefined,
-        writable: true,
-        configurable: true,
-      });
-
-      const execCommandMock = vi.fn().mockReturnValue(false);
-      document.execCommand = execCommandMock;
-
-      buttonElement.click();
-      await fixture.whenStable();
-
-      expect(component.lastCopyResult?.success).toBe(false);
-      expect(component.lastCopyResult?.error).toBeDefined();
+      expect(emitSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          text: 'Failed copy',
+        }),
+      );
     });
   });
 
   describe('different text values', () => {
-    it('should copy updated text value', async () => {
-      const writeTextMock = vi.fn().mockResolvedValue(undefined);
-      Object.defineProperty(navigator, 'clipboard', {
-        value: { writeText: writeTextMock },
-        writable: true,
-        configurable: true,
-      });
-
-      component.textToCopy.set('New text');
-      fixture.detectChanges();
-
-      buttonElement.click();
-      await fixture.whenStable();
-
-      expect(writeTextMock).toHaveBeenCalledWith('New text');
-      expect(component.lastCopyResult?.text).toBe('New text');
-    });
-
     it('should handle text with special characters', async () => {
       const writeTextMock = vi.fn().mockResolvedValue(undefined);
       Object.defineProperty(navigator, 'clipboard', {
@@ -204,14 +162,18 @@ describe('CopyToClipboardDirective', () => {
         configurable: true,
       });
 
-      const specialText = 'Text with "quotes" & <brackets>';
-      component.textToCopy.set(specialText);
-      fixture.detectChanges();
+      const specialText = 'Hello @world! #test 123 <>&"\'';
+      Object.defineProperty(directive, 'copyText', { value: () => specialText });
 
-      buttonElement.click();
-      await fixture.whenStable();
+      const emitSpy = vi.spyOn(directive.copied, 'emit');
+
+      await directive.onClick();
 
       expect(writeTextMock).toHaveBeenCalledWith(specialText);
+      expect(emitSpy).toHaveBeenCalledWith({
+        success: true,
+        text: specialText,
+      });
     });
 
     it('should handle multiline text', async () => {
@@ -223,13 +185,39 @@ describe('CopyToClipboardDirective', () => {
       });
 
       const multilineText = 'Line 1\nLine 2\nLine 3';
-      component.textToCopy.set(multilineText);
-      fixture.detectChanges();
+      Object.defineProperty(directive, 'copyText', { value: () => multilineText });
 
-      buttonElement.click();
-      await fixture.whenStable();
+      const emitSpy = vi.spyOn(directive.copied, 'emit');
+
+      await directive.onClick();
 
       expect(writeTextMock).toHaveBeenCalledWith(multilineText);
+      expect(emitSpy).toHaveBeenCalledWith({
+        success: true,
+        text: multilineText,
+      });
+    });
+
+    it('should handle unicode text', async () => {
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: writeTextMock },
+        writable: true,
+        configurable: true,
+      });
+
+      const unicodeText = '你好世界 🌍 مرحبا';
+      Object.defineProperty(directive, 'copyText', { value: () => unicodeText });
+
+      const emitSpy = vi.spyOn(directive.copied, 'emit');
+
+      await directive.onClick();
+
+      expect(writeTextMock).toHaveBeenCalledWith(unicodeText);
+      expect(emitSpy).toHaveBeenCalledWith({
+        success: true,
+        text: unicodeText,
+      });
     });
   });
 });

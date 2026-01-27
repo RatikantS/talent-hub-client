@@ -214,15 +214,27 @@ export class DragDropDirective<T = unknown> {
    *
    * @param event - The native DragEvent from the browser
    * @returns void
+   *
+   * @remarks
+   * - Uses 'application/json' MIME type for cross-browser compatibility
+   * - Sets effectAllowed to 'move' to indicate move operation
+   * - Data must be JSON-serializable (no functions, circular references)
    */
   onDragStart(event: DragEvent): void {
+    // Get the data to transfer from the input signal
     const data: T | undefined = this.dragData();
 
+    // Only set transfer data if dataTransfer is available and data is defined
     if (event.dataTransfer && data !== undefined) {
+      // Set the allowed effect to 'move' (can also be 'copy', 'link', 'all', 'none')
       event.dataTransfer.effectAllowed = 'move';
+
+      // Serialize the data as JSON and store in dataTransfer
+      // Using 'application/json' MIME type for structured data
       event.dataTransfer.setData('application/json', JSON.stringify(data));
     }
 
+    // Emit the dragStart event with the data (or undefined if not set)
     this.dragStart.emit(data);
   }
 
@@ -231,8 +243,14 @@ export class DragDropDirective<T = unknown> {
    * Called when drag operation completes (by dropping or canceling).
    *
    * @returns void
+   *
+   * @remarks
+   * - Always called regardless of whether drop was successful
+   * - Use this to clean up any drag state (CSS classes, flags, etc.)
    */
   onDragEnd(): void {
+    // Notify listeners that the drag operation has ended
+    // This is called whether the drop was successful or cancelled
     this.dragEnd.emit();
   }
 
@@ -242,12 +260,24 @@ export class DragDropDirective<T = unknown> {
    *
    * @param event - The native DragEvent from the browser
    * @returns void
+   *
+   * @remarks
+   * - Must call preventDefault() to allow drop (browser default is to prevent dropping)
+   * - Sets dropEffect to 'move' for consistent cursor feedback
+   * - Fires continuously while dragging over the element
    */
   onDragOver(event: DragEvent): void {
+    // IMPORTANT: preventDefault() is required to allow dropping
+    // By default, browsers prevent dropping on most elements
     event.preventDefault();
+
+    // Set the visual feedback for the drop operation
     if (event.dataTransfer) {
+      // 'move' shows a move cursor, alternatives: 'copy', 'link', 'none'
       event.dataTransfer.dropEffect = 'move';
     }
+
+    // Emit the dragOver event for UI updates (e.g., highlight drop zone)
     this.dragOver.emit(event);
   }
 
@@ -256,8 +286,14 @@ export class DragDropDirective<T = unknown> {
    * Called when a dragged element exits the drop zone.
    *
    * @returns void
+   *
+   * @remarks
+   * - Use this to remove visual feedback (e.g., remove highlight from drop zone)
+   * - May fire multiple times due to child element boundaries
    */
   onDragLeave(): void {
+    // Notify listeners that the dragged element left the drop zone
+    // Use this to remove drop zone highlighting or other visual feedback
     this.dragLeave.emit();
   }
 
@@ -267,24 +303,42 @@ export class DragDropDirective<T = unknown> {
    *
    * @param event - The native DragEvent from the browser
    * @returns void
+   *
+   * @remarks
+   * - Calls preventDefault() and stopPropagation() to handle the drop
+   * - Attempts to parse JSON data from 'application/json' MIME type
+   * - Returns null for data if parsing fails or no data was transferred
+   * - Logs parsing errors to console for debugging
    */
   onDrop(event: DragEvent): void {
+    // Prevent default browser behavior (e.g., opening files)
     event.preventDefault();
+
+    // Stop event propagation to prevent parent elements from handling the drop
     event.stopPropagation();
 
+    // Initialize data as null (will be populated if JSON parsing succeeds)
     let data: T | null = null;
 
+    // Attempt to extract and parse the transferred data
     if (event.dataTransfer) {
+      // Retrieve the JSON string from the dataTransfer object
       const jsonData: string = event.dataTransfer.getData('application/json');
+
+      // Only attempt parsing if data was actually transferred
       if (jsonData) {
         try {
+          // Parse the JSON string back to the original data type
           data = JSON.parse(jsonData) as T;
         } catch (error) {
+          // Log parsing errors for debugging (malformed JSON, etc.)
           console.error('Failed to parse drag data:', error);
         }
       }
     }
 
+    // Emit the drop event with both the native event and parsed data
+    // Consumers can check if data is null to determine if parsing succeeded
     this.dropped.emit({ event, data });
   }
 }

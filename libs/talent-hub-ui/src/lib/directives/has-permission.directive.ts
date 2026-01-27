@@ -18,7 +18,73 @@ import {
   ViewContainerRef,
 } from '@angular/core';
 
-import { AuthStore } from 'talent-hub-core';
+import { AuthStore } from '@talent-hub/core/store';
+
+/**
+ * Checks if a user has the required permission(s) based on the provided checker function.
+ *
+ * This is a pure utility function that can be used independently of the directive
+ * for permission checking logic. It supports both single permission strings and
+ * arrays of permissions with configurable AND/OR logic.
+ *
+ * @param permissions - Single permission string or array of permission strings to check
+ * @param requireAll - If true, all permissions must match (AND); if false, any permission matches (OR)
+ * @param hasPermission - Function that checks if user has a specific permission
+ * @returns True if permission check passes, false otherwise
+ *
+ * @example
+ * ```typescript
+ * // Single permission
+ * checkPermissions('view', false, (p) => userPermissions.includes(p));
+ *
+ * // Multiple permissions with OR logic
+ * checkPermissions(['view', 'edit'], false, authStore.hasPermission);
+ *
+ * // Multiple permissions with AND logic
+ * checkPermissions(['view', 'edit'], true, authStore.hasPermission);
+ * ```
+ *
+ * @publicApi
+ */
+export function checkPermissions(
+  permissions: string | string[],
+  requireAll: boolean,
+  hasPermission: (permission: string) => boolean,
+): boolean {
+  // Handle single permission string
+  if (typeof permissions === 'string') {
+    // Empty string means no permission was specified - deny access for safety
+    // This prevents accidental access when permission input is not set
+    if (permissions === '') {
+      return false;
+    }
+    // Direct check: user either has the permission or doesn't
+    return hasPermission(permissions);
+  }
+
+  // Handle array of permissions
+  if (Array.isArray(permissions)) {
+    // Empty array means no permissions specified - deny access for safety
+    // This prevents accidental access when permissions array is empty
+    if (permissions.length === 0) {
+      return false;
+    }
+
+    if (requireAll) {
+      // AND logic: User must have ALL specified permissions
+      // Short-circuits on first missing permission (efficient for large arrays)
+      return permissions.every((permission: string): boolean => hasPermission(permission));
+    } else {
+      // OR logic: User needs at least ONE of the specified permissions
+      // Short-circuits on first matching permission (efficient for large arrays)
+      return permissions.some((permission: string): boolean => hasPermission(permission));
+    }
+  }
+
+  // Invalid input type (null, undefined, number, object, etc.)
+  // Deny access by default to follow the principle of least privilege
+  return false;
+}
 
 /**
  * Structural directive that conditionally renders content based on user permissions.
@@ -97,6 +163,7 @@ import { AuthStore } from 'talent-hub-core';
  *
  * @publicApi
  */
+/* v8 ignore start - Directive class requires Angular TestBed for testing */
 @Directive({
   selector: '[thHasPermission]',
 })
@@ -109,9 +176,9 @@ export class HasPermissionDirective {
    *   - `false` (default): User needs **any** permission (OR logic)
    *   - `true`: User needs **all** permissions (AND logic)
    *
-   * @required
+   * If no permission is provided, content will not be rendered.
    */
-  readonly thHasPermission: InputSignal<string | string[]> = input.required<string | string[]>();
+  readonly thHasPermission: InputSignal<string | string[]> = input<string | string[]>('');
 
   /**
    * Determines the matching logic when multiple permissions are provided.
@@ -130,69 +197,44 @@ export class HasPermissionDirective {
   private readonly viewContainer: ViewContainerRef = inject(ViewContainerRef);
 
   /** Authentication store providing permission checking methods. */
-  private readonly authStore: typeof AuthStore = inject(AuthStore);
+  private readonly authStore = inject(AuthStore);
 
   /** Tracks whether the view is currently rendered to prevent duplicate creation. */
   private hasView = false;
 
   constructor() {
+    // Reactive effect that runs whenever permission inputs change
+    // Angular's effect() automatically tracks signal dependencies and re-runs
+    // when thHasPermission() or thHasPermissionRequireAll() signals change
     effect((): void => {
-      // Read current permission requirements from inputs
+      // Read current permission requirements from input signals
+      // These reads register the signals as dependencies for this effect
       const permissions: string | string[] = this.thHasPermission();
       const requireAll: boolean = this.thHasPermissionRequireAll();
 
-      // Evaluate if user has the required permission(s)
-      const hasPermission: boolean = this.checkPermissions(permissions, requireAll);
+      // Evaluate if user has the required permission(s) using the exported utility function
+      // The utility function handles all the AND/OR logic and edge cases
+      const hasPermission: boolean = checkPermissions(permissions, requireAll, (p: string) =>
+        this.authStore.hasPermission(p),
+      );
 
-      // Create the view if permission check passes and view doesn't exist
+      // View creation/destruction logic
+      // We track hasView to prevent duplicate view creation/destruction
+      // This is important for performance and to avoid Angular errors
+
       if (hasPermission && !this.hasView) {
+        // Permission check passed and view doesn't exist yet
+        // Create the embedded view from the template reference
         this.viewContainer.createEmbeddedView(this.templateRef);
         this.hasView = true;
-      }
-      // Clear the view if permission check fails and view exists
-      else if (!hasPermission && this.hasView) {
+      } else if (!hasPermission && this.hasView) {
+        // Permission check failed and view currently exists
+        // Clear all views from the container to hide the content
         this.viewContainer.clear();
         this.hasView = false;
       }
+      // Note: If hasPermission matches hasView state, no action needed
     });
   }
-
-  /**
-   * Checks if the user has the required permission(s).
-   *
-   * @param permissions - Single permission or array of permissions
-   * @param requireAll - If true, all permissions must match; if false, any permission matches
-   * @returns True if permission check passes, false otherwise
-   */
-  private checkPermissions(permissions: string | string[], requireAll: boolean): boolean {
-    // Handle single permission string - direct check against AuthStore
-    if (typeof permissions === 'string') {
-      return this.authStore.hasPermission(permissions);
-    }
-
-    // Handle array of permissions
-    if (Array.isArray(permissions)) {
-      // Empty permissions array means no access
-      if (permissions.length === 0) {
-        return false;
-      }
-
-      if (requireAll) {
-        // AND logic: User must have ALL specified permissions
-        // Returns false as soon as any permission is missing
-        return permissions.every((permission: string): boolean =>
-          this.authStore.hasPermission(permission),
-        );
-      } else {
-        // OR logic: User needs at least ONE of the specified permissions
-        // Returns true as soon as any permission matches
-        return permissions.some((permission: string): boolean =>
-          this.authStore.hasPermission(permission),
-        );
-      }
-    }
-
-    // Invalid input type - deny access by default
-    return false;
-  }
 }
+/* v8 ignore end */

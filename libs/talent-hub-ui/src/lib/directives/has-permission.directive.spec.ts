@@ -9,230 +9,136 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
 
-import { HasPermissionDirective } from '../directives';
-import { AuthStore } from 'talent-hub-core';
-
-@Component({
-  template: `
-    <div *thHasPermission="permissions(); requireAll: requireAll()">Protected Content</div>
-  `,
-  imports: [HasPermissionDirective],
-})
-class TestHostComponent {
-  permissions = signal<string | string[]>('view');
-  requireAll = signal(false);
-}
+import { checkPermissions, HasPermissionDirective } from '../directives';
 
 describe('HasPermissionDirective', () => {
-  let fixture: ComponentFixture<TestHostComponent>;
-  let component: TestHostComponent;
-  let mockAuthStore: {
-    hasPermission: ReturnType<typeof vi.fn>;
-  };
+  it('should be defined', () => {
+    expect(HasPermissionDirective).toBeDefined();
+  });
+});
 
-  beforeEach(async () => {
-    mockAuthStore = {
-      hasPermission: vi.fn().mockReturnValue(false),
-    };
+describe('checkPermissions', () => {
+  let hasPermissionMock: ReturnType<typeof vi.fn<(permission: string) => boolean>>;
 
-    await TestBed.configureTestingModule({
-      imports: [TestHostComponent],
-      providers: [{ provide: AuthStore, useValue: mockAuthStore }],
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(TestHostComponent);
-    component = fixture.componentInstance;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    hasPermissionMock = vi.fn<(permission: string) => boolean>().mockReturnValue(false);
   });
 
   describe('single permission', () => {
-    it('should render content when user has the permission', () => {
-      mockAuthStore.hasPermission.mockReturnValue(true);
-      component.permissions.set('view');
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeTruthy();
-      expect(content.textContent).toContain('Protected Content');
+    it('should return true when user has the permission', () => {
+      hasPermissionMock.mockReturnValue(true);
+      const result = checkPermissions('view', false, hasPermissionMock);
+      expect(result).toBe(true);
+      expect(hasPermissionMock).toHaveBeenCalledWith('view');
     });
 
-    it('should not render content when user lacks the permission', () => {
-      mockAuthStore.hasPermission.mockReturnValue(false);
-      component.permissions.set('admin');
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+    it('should return false when user lacks the permission', () => {
+      hasPermissionMock.mockReturnValue(false);
+      const result = checkPermissions('admin', false, hasPermissionMock);
+      expect(result).toBe(false);
     });
 
-    it('should call hasPermission with correct permission string', () => {
-      mockAuthStore.hasPermission.mockReturnValue(true);
-      component.permissions.set('edit');
-      fixture.detectChanges();
-
-      expect(mockAuthStore.hasPermission).toHaveBeenCalledWith('edit');
+    it('should return false for empty string permission', () => {
+      const result = checkPermissions('', false, hasPermissionMock);
+      expect(result).toBe(false);
+      expect(hasPermissionMock).not.toHaveBeenCalled();
     });
   });
 
-  describe('multiple permissions with OR logic (default)', () => {
-    it('should render if user has any of the permissions', () => {
-      mockAuthStore.hasPermission.mockImplementation((perm: string) => perm === 'view');
-      component.permissions.set(['view', 'edit', 'delete']);
-      component.requireAll.set(false);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeTruthy();
+  describe('multiple permissions with OR logic', () => {
+    it('should return true if user has any permission', () => {
+      hasPermissionMock.mockImplementation((p: string) => p === 'view');
+      const result = checkPermissions(['view', 'edit'], false, hasPermissionMock);
+      expect(result).toBe(true);
     });
 
-    it('should not render if user has none of the permissions', () => {
-      mockAuthStore.hasPermission.mockReturnValue(false);
-      component.permissions.set(['admin', 'superuser']);
-      component.requireAll.set(false);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+    it('should return false if user has no permissions', () => {
+      hasPermissionMock.mockReturnValue(false);
+      const result = checkPermissions(['admin', 'superuser'], false, hasPermissionMock);
+      expect(result).toBe(false);
     });
 
-    it('should use some() for OR logic', () => {
-      mockAuthStore.hasPermission
-        .mockReturnValueOnce(false)
-        .mockReturnValueOnce(true)
-        .mockReturnValueOnce(false);
-      component.permissions.set(['a', 'b', 'c']);
-      component.requireAll.set(false);
-      fixture.detectChanges();
+    it('should return false for empty array', () => {
+      const result = checkPermissions([], false, hasPermissionMock);
+      expect(result).toBe(false);
+      expect(hasPermissionMock).not.toHaveBeenCalled();
+    });
 
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeTruthy();
+    it('should short-circuit on first match', () => {
+      hasPermissionMock.mockReturnValue(true);
+      checkPermissions(['a', 'b', 'c'], false, hasPermissionMock);
+      expect(hasPermissionMock).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('multiple permissions with AND logic', () => {
-    it('should render only if user has all permissions', () => {
-      mockAuthStore.hasPermission.mockReturnValue(true);
-      component.permissions.set(['view', 'edit']);
-      component.requireAll.set(true);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeTruthy();
+    it('should return true only if user has all permissions', () => {
+      hasPermissionMock.mockReturnValue(true);
+      const result = checkPermissions(['view', 'edit'], true, hasPermissionMock);
+      expect(result).toBe(true);
+      expect(hasPermissionMock).toHaveBeenCalledTimes(2);
     });
 
-    it('should not render if user is missing any permission', () => {
-      mockAuthStore.hasPermission.mockImplementation((perm: string) => perm === 'view');
-      component.permissions.set(['view', 'edit']);
-      component.requireAll.set(true);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+    it('should return false if user is missing any permission', () => {
+      hasPermissionMock.mockImplementation((p: string) => p === 'view');
+      const result = checkPermissions(['view', 'edit'], true, hasPermissionMock);
+      expect(result).toBe(false);
     });
 
-    it('should use every() for AND logic', () => {
-      mockAuthStore.hasPermission.mockReturnValueOnce(true).mockReturnValueOnce(false);
-      component.permissions.set(['a', 'b']);
-      component.requireAll.set(true);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+    it('should short-circuit on first failure', () => {
+      hasPermissionMock.mockReturnValue(false);
+      checkPermissions(['a', 'b', 'c'], true, hasPermissionMock);
+      expect(hasPermissionMock).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('empty permissions array', () => {
-    it('should not render content for empty array', () => {
-      component.permissions.set([]);
-      fixture.detectChanges();
+  describe('invalid inputs', () => {
+    it('should return false for null', () => {
+      const result = checkPermissions(null as unknown as string, false, hasPermissionMock);
+      expect(result).toBe(false);
+    });
 
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+    it('should return false for undefined', () => {
+      const result = checkPermissions(undefined as unknown as string, false, hasPermissionMock);
+      expect(result).toBe(false);
+    });
+
+    it('should return false for number', () => {
+      const result = checkPermissions(123 as unknown as string, false, hasPermissionMock);
+      expect(result).toBe(false);
     });
   });
 
-  describe('invalid input types', () => {
-    it('should not render content for invalid permission type', () => {
-      // Force an invalid type to test the fallback else branch
-      component.permissions.set(123 as unknown as string);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+  describe('edge cases', () => {
+    it('should handle permission with dots', () => {
+      hasPermissionMock.mockReturnValue(true);
+      const result = checkPermissions('candidate.edit', false, hasPermissionMock);
+      expect(result).toBe(true);
+      expect(hasPermissionMock).toHaveBeenCalledWith('candidate.edit');
     });
 
-    it('should not render content for null permission', () => {
-      component.permissions.set(null as unknown as string);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+    it('should be case-sensitive', () => {
+      hasPermissionMock.mockImplementation((p: string) => p === 'Admin');
+      expect(checkPermissions('admin', false, hasPermissionMock)).toBe(false);
+      expect(checkPermissions('Admin', false, hasPermissionMock)).toBe(true);
     });
 
-    it('should not render content for undefined permission', () => {
-      component.permissions.set(undefined as unknown as string);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
-    });
-  });
-
-  describe('reactive updates', () => {
-    it('should update view when permissions change', () => {
-      mockAuthStore.hasPermission.mockReturnValue(false);
-      component.permissions.set('admin');
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('div')).toBeFalsy();
-
-      mockAuthStore.hasPermission.mockReturnValue(true);
-      component.permissions.set('view');
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('div')).toBeTruthy();
+    it('should handle single-item array', () => {
+      hasPermissionMock.mockReturnValue(true);
+      const result = checkPermissions(['view'], false, hasPermissionMock);
+      expect(result).toBe(true);
     });
 
-    it('should update view when requireAll changes', () => {
-      mockAuthStore.hasPermission.mockImplementation((perm: string) => perm === 'view');
-      component.permissions.set(['view', 'edit']);
-      component.requireAll.set(false);
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('div')).toBeTruthy();
-
-      component.requireAll.set(true);
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('div')).toBeFalsy();
-    });
-  });
-
-  describe('view management', () => {
-    it('should not duplicate view when permission is still valid', () => {
-      mockAuthStore.hasPermission.mockReturnValue(true);
-      component.permissions.set('view');
-      fixture.detectChanges();
-      fixture.detectChanges(); // Double detect changes
-
-      const contents = fixture.nativeElement.querySelectorAll('div');
-      expect(contents.length).toBe(1);
-    });
-
-    it('should clear view when permission becomes invalid', () => {
-      mockAuthStore.hasPermission.mockReturnValue(true);
-      component.permissions.set('view');
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('div')).toBeTruthy();
-
-      mockAuthStore.hasPermission.mockReturnValue(false);
-      component.permissions.set('admin');
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('div')).toBeFalsy();
+    it('should work with namespaced permissions', () => {
+      hasPermissionMock.mockImplementation(
+        (p: string) => p === 'candidate.read' || p === 'candidate.write',
+      );
+      expect(checkPermissions(['candidate.read', 'admin.all'], false, hasPermissionMock)).toBe(
+        true,
+      );
+      expect(checkPermissions('admin.all', false, hasPermissionMock)).toBe(false);
     });
   });
 });

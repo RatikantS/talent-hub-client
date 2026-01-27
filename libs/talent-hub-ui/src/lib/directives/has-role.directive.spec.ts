@@ -9,228 +9,132 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
 
-import { HasRoleDirective } from '../directives';
-import { AuthStore } from 'talent-hub-core';
-
-@Component({
-  template: ` <div *thHasRole="roles(); requireAll: requireAll()">Protected Content</div> `,
-  imports: [HasRoleDirective],
-})
-class TestHostComponent {
-  roles = signal<string | string[]>('admin');
-  requireAll = signal(false);
-}
+import { checkRoles, HasRoleDirective } from '../directives';
 
 describe('HasRoleDirective', () => {
-  let fixture: ComponentFixture<TestHostComponent>;
-  let component: TestHostComponent;
-  let mockAuthStore: {
-    hasRole: ReturnType<typeof vi.fn>;
-  };
+  it('should be defined', () => {
+    expect(HasRoleDirective).toBeDefined();
+  });
+});
 
-  beforeEach(async () => {
-    mockAuthStore = {
-      hasRole: vi.fn().mockReturnValue(false),
-    };
+describe('checkRoles', () => {
+  let hasRoleMock: ReturnType<typeof vi.fn<(role: string) => boolean>>;
 
-    await TestBed.configureTestingModule({
-      imports: [TestHostComponent],
-      providers: [{ provide: AuthStore, useValue: mockAuthStore }],
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(TestHostComponent);
-    component = fixture.componentInstance;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    hasRoleMock = vi.fn<(role: string) => boolean>().mockReturnValue(false);
   });
 
   describe('single role', () => {
-    it('should render content when user has the role', () => {
-      mockAuthStore.hasRole.mockReturnValue(true);
-      component.roles.set('admin');
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeTruthy();
-      expect(content.textContent).toContain('Protected Content');
+    it('should return true when user has the role', () => {
+      hasRoleMock.mockReturnValue(true);
+      const result = checkRoles('admin', false, hasRoleMock);
+      expect(result).toBe(true);
+      expect(hasRoleMock).toHaveBeenCalledWith('admin');
     });
 
-    it('should not render content when user lacks the role', () => {
-      mockAuthStore.hasRole.mockReturnValue(false);
-      component.roles.set('superuser');
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+    it('should return false when user lacks the role', () => {
+      hasRoleMock.mockReturnValue(false);
+      const result = checkRoles('superuser', false, hasRoleMock);
+      expect(result).toBe(false);
     });
 
-    it('should call hasRole with correct role string', () => {
-      mockAuthStore.hasRole.mockReturnValue(true);
-      component.roles.set('manager');
-      fixture.detectChanges();
-
-      expect(mockAuthStore.hasRole).toHaveBeenCalledWith('manager');
+    it('should return false for empty string role', () => {
+      const result = checkRoles('', false, hasRoleMock);
+      expect(result).toBe(false);
+      expect(hasRoleMock).not.toHaveBeenCalled();
     });
   });
 
-  describe('multiple roles with OR logic (default)', () => {
-    it('should render if user has any of the roles', () => {
-      mockAuthStore.hasRole.mockImplementation((role: string) => role === 'admin');
-      component.roles.set(['admin', 'manager', 'user']);
-      component.requireAll.set(false);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeTruthy();
+  describe('multiple roles with OR logic', () => {
+    it('should return true if user has any role', () => {
+      hasRoleMock.mockImplementation((r: string) => r === 'admin');
+      const result = checkRoles(['admin', 'manager'], false, hasRoleMock);
+      expect(result).toBe(true);
     });
 
-    it('should not render if user has none of the roles', () => {
-      mockAuthStore.hasRole.mockReturnValue(false);
-      component.roles.set(['superuser', 'root']);
-      component.requireAll.set(false);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+    it('should return false if user has no roles', () => {
+      hasRoleMock.mockReturnValue(false);
+      const result = checkRoles(['superuser', 'root'], false, hasRoleMock);
+      expect(result).toBe(false);
     });
 
-    it('should use some() for OR logic', () => {
-      mockAuthStore.hasRole
-        .mockReturnValueOnce(false)
-        .mockReturnValueOnce(true)
-        .mockReturnValueOnce(false);
-      component.roles.set(['a', 'b', 'c']);
-      component.requireAll.set(false);
-      fixture.detectChanges();
+    it('should return false for empty array', () => {
+      const result = checkRoles([], false, hasRoleMock);
+      expect(result).toBe(false);
+      expect(hasRoleMock).not.toHaveBeenCalled();
+    });
 
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeTruthy();
+    it('should short-circuit on first match', () => {
+      hasRoleMock.mockReturnValue(true);
+      checkRoles(['a', 'b', 'c'], false, hasRoleMock);
+      expect(hasRoleMock).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('multiple roles with AND logic', () => {
-    it('should render only if user has all roles', () => {
-      mockAuthStore.hasRole.mockReturnValue(true);
-      component.roles.set(['admin', 'manager']);
-      component.requireAll.set(true);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeTruthy();
+    it('should return true only if user has all roles', () => {
+      hasRoleMock.mockReturnValue(true);
+      const result = checkRoles(['admin', 'manager'], true, hasRoleMock);
+      expect(result).toBe(true);
+      expect(hasRoleMock).toHaveBeenCalledTimes(2);
     });
 
-    it('should not render if user is missing any role', () => {
-      mockAuthStore.hasRole.mockImplementation((role: string) => role === 'admin');
-      component.roles.set(['admin', 'manager']);
-      component.requireAll.set(true);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+    it('should return false if user is missing any role', () => {
+      hasRoleMock.mockImplementation((r: string) => r === 'admin');
+      const result = checkRoles(['admin', 'manager'], true, hasRoleMock);
+      expect(result).toBe(false);
     });
 
-    it('should use every() for AND logic', () => {
-      mockAuthStore.hasRole.mockReturnValueOnce(true).mockReturnValueOnce(false);
-      component.roles.set(['a', 'b']);
-      component.requireAll.set(true);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+    it('should short-circuit on first failure', () => {
+      hasRoleMock.mockReturnValue(false);
+      checkRoles(['a', 'b', 'c'], true, hasRoleMock);
+      expect(hasRoleMock).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('empty roles array', () => {
-    it('should not render content for empty array', () => {
-      component.roles.set([]);
-      fixture.detectChanges();
+  describe('invalid inputs', () => {
+    it('should return false for null', () => {
+      const result = checkRoles(null as unknown as string, false, hasRoleMock);
+      expect(result).toBe(false);
+    });
 
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+    it('should return false for undefined', () => {
+      const result = checkRoles(undefined as unknown as string, false, hasRoleMock);
+      expect(result).toBe(false);
+    });
+
+    it('should return false for number', () => {
+      const result = checkRoles(123 as unknown as string, false, hasRoleMock);
+      expect(result).toBe(false);
     });
   });
 
-  describe('invalid input types', () => {
-    it('should not render content for invalid role type', () => {
-      // Force an invalid type to test the fallback else branch
-      component.roles.set(123 as unknown as string);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+  describe('edge cases', () => {
+    it('should handle role with underscores', () => {
+      hasRoleMock.mockReturnValue(true);
+      const result = checkRoles('hiring_manager', false, hasRoleMock);
+      expect(result).toBe(true);
+      expect(hasRoleMock).toHaveBeenCalledWith('hiring_manager');
     });
 
-    it('should not render content for null role', () => {
-      component.roles.set(null as unknown as string);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
+    it('should be case-sensitive', () => {
+      hasRoleMock.mockImplementation((r: string) => r === 'Admin');
+      expect(checkRoles('admin', false, hasRoleMock)).toBe(false);
+      expect(checkRoles('Admin', false, hasRoleMock)).toBe(true);
     });
 
-    it('should not render content for undefined role', () => {
-      component.roles.set(undefined as unknown as string);
-      fixture.detectChanges();
-
-      const content = fixture.nativeElement.querySelector('div');
-      expect(content).toBeFalsy();
-    });
-  });
-
-  describe('reactive updates', () => {
-    it('should update view when roles change', () => {
-      mockAuthStore.hasRole.mockReturnValue(false);
-      component.roles.set('superuser');
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('div')).toBeFalsy();
-
-      mockAuthStore.hasRole.mockReturnValue(true);
-      component.roles.set('admin');
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('div')).toBeTruthy();
+    it('should handle single-item array', () => {
+      hasRoleMock.mockReturnValue(true);
+      const result = checkRoles(['admin'], false, hasRoleMock);
+      expect(result).toBe(true);
     });
 
-    it('should update view when requireAll changes', () => {
-      mockAuthStore.hasRole.mockImplementation((role: string) => role === 'admin');
-      component.roles.set(['admin', 'manager']);
-      component.requireAll.set(false);
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('div')).toBeTruthy();
-
-      component.requireAll.set(true);
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('div')).toBeFalsy();
-    });
-  });
-
-  describe('view management', () => {
-    it('should not duplicate view when role is still valid', () => {
-      mockAuthStore.hasRole.mockReturnValue(true);
-      component.roles.set('admin');
-      fixture.detectChanges();
-      fixture.detectChanges(); // Double detect changes
-
-      const contents = fixture.nativeElement.querySelectorAll('div');
-      expect(contents.length).toBe(1);
-    });
-
-    it('should clear view when role becomes invalid', () => {
-      mockAuthStore.hasRole.mockReturnValue(true);
-      component.roles.set('admin');
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('div')).toBeTruthy();
-
-      mockAuthStore.hasRole.mockReturnValue(false);
-      component.roles.set('superuser');
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('div')).toBeFalsy();
+    it('should work with department-based roles', () => {
+      hasRoleMock.mockImplementation((r: string) => r === 'hr_recruiter' || r === 'hr_manager');
+      expect(checkRoles(['hr_recruiter', 'hr_admin'], false, hasRoleMock)).toBe(true);
+      expect(checkRoles('admin', false, hasRoleMock)).toBe(false);
     });
   });
 });

@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import { Directive, HostListener, input, InputSignal } from '@angular/core';
+import { Directive, input, InputSignal } from '@angular/core';
 
 /**
  * Attribute directive that restricts input to numeric characters only.
@@ -132,7 +132,7 @@ export class NumericOnlyDirective {
    *
    * @internal
    */
-  private readonly NAVIGATION_KEYS: readonly string[] = [
+  private readonly NAVIGATION_KEYS = [
     'Backspace', // Delete character before cursor
     'Delete', // Delete character after cursor
     'Tab', // Move to next focusable element
@@ -144,7 +144,7 @@ export class NumericOnlyDirective {
     'ArrowDown', // Decrement value (in some browsers)
     'Home', // Move cursor to start
     'End', // Move cursor to end
-  ] as const;
+  ];
 
   /**
    * Clipboard and selection shortcut keys.
@@ -154,7 +154,7 @@ export class NumericOnlyDirective {
    *
    * @internal
    */
-  private readonly CLIPBOARD_KEYS: readonly string[] = [
+  private readonly CLIPBOARD_KEYS = [
     'a',
     'A', // Select all
     'c',
@@ -163,14 +163,40 @@ export class NumericOnlyDirective {
     'V', // Paste (content validated in onPaste handler)
     'x',
     'X', // Cut
-  ] as const;
+  ];
 
   /**
    * Handles the keydown event to prevent non-numeric input.
    *
-   * @param event - The keyboard event
+   * This method intercepts every key press and determines whether to allow
+   * or block it based on the following priority:
+   *
+   * 1. **Navigation keys** - Always allowed (Backspace, Delete, arrows, etc.)
+   * 2. **Clipboard shortcuts** - Allowed with Ctrl/Cmd modifier (copy, paste, cut)
+   * 3. **Digit keys** - Always allowed (0-9)
+   * 4. **Decimal point** - Allowed only if `allowDecimal` is true and no decimal exists
+   * 5. **Negative sign** - Allowed only if `allowNegative` is true, at position 0, and no sign exists
+   * 6. **All other keys** - Blocked via `preventDefault()`
+   *
+   * @param event - The keyboard event triggered by user input
+   *
+   * @example
+   * ```typescript
+   * // These keys are allowed:
+   * // - '0', '1', '9' (digits)
+   * // - 'Backspace', 'Delete', 'ArrowLeft' (navigation)
+   * // - Ctrl+C, Ctrl+V (clipboard)
+   * // - '.' (decimal, only if allowDecimal=true and no existing decimal)
+   * // - '-' (minus, only if allowNegative=true at position 0)
+   *
+   * // These keys are blocked:
+   * // - 'a', 'B', 'z' (alphabetic)
+   * // - '@', '#', '!' (special characters)
+   * // - ' ' (space)
+   * // - '.' (if decimal already exists or allowDecimal=false)
+   * // - '-' (if not at position 0 or allowNegative=false)
+   * ```
    */
-  @HostListener('keydown', ['$event'])
   onKeyDown(event: KeyboardEvent): void {
     // Extract key information from the event
     const key: string = event.key;
@@ -206,9 +232,10 @@ export class NumericOnlyDirective {
 
     // Allow negative sign only if:
     // 1. Negative is enabled via input
-    // 2. Cursor is at the beginning (position 0)
+    // 2. Cursor is at the beginning (position 0 or null for empty input)
     // 3. No negative sign already exists in the value
-    if (isNegativeAllowed && key === '-' && target.selectionStart === 0 && !value.includes('-')) {
+    const selectionStart = target.selectionStart ?? 0;
+    if (isNegativeAllowed && key === '-' && selectionStart === 0 && !value.includes('-')) {
       return;
     }
 
@@ -218,10 +245,43 @@ export class NumericOnlyDirective {
 
   /**
    * Handles the paste event to validate pasted content.
-   * Only allows paste if the content is numeric.
-   * @param event - The clipboard event
+   *
+   * This method intercepts paste operations and validates the clipboard content
+   * against the allowed numeric pattern based on current configuration. If the
+   * pasted text contains any invalid characters, the entire paste operation is blocked.
+   *
+   * @param event - The clipboard event triggered by paste action (Ctrl+V or right-click paste)
+   *
+   * @returns void - Prevents default action for invalid paste content
+   *
+   * @remarks
+   * - Validates entire pasted content, not individual characters
+   * - Uses dynamic regex pattern based on `allowDecimal` and `allowNegative` settings
+   * - Empty clipboard content is allowed (no-op)
+   * - Only one decimal point is allowed in pasted content
+   * - Negative sign must be at the beginning of pasted content
+   *
+   * @example
+   * ```typescript
+   * // With default settings (integers only):
+   * // ✅ "123" - allowed
+   * // ❌ "12.34" - blocked (contains decimal)
+   * // ❌ "-123" - blocked (contains minus)
+   *
+   * // With allowDecimal=true:
+   * // ✅ "123.45" - allowed
+   * // ✅ ".45" - allowed
+   * // ❌ "12.34.56" - blocked (multiple decimals)
+   *
+   * // With allowNegative=true:
+   * // ✅ "-123" - allowed
+   * // ❌ "12-3" - blocked (minus not at start)
+   *
+   * // With both allowDecimal=true and allowNegative=true:
+   * // ✅ "-123.45" - allowed
+   * // ✅ "-.45" - allowed
+   * ```
    */
-  @HostListener('paste', ['$event'])
   onPaste(event: ClipboardEvent): void {
     // Extract text content from clipboard
     const pastedText: string | undefined = event.clipboardData?.getData('text');
@@ -236,24 +296,23 @@ export class NumericOnlyDirective {
     const isNegativeAllowed: boolean = this.allowNegative();
 
     // Build dynamic regex pattern based on current configuration
-    // Start with beginning anchor
-    let pattern = '^';
+    let pattern: string;
 
-    // Add optional negative sign if allowed
-    if (isNegativeAllowed) {
-      pattern += '-?';
+    if (isDecimalAllowed && isNegativeAllowed) {
+      // Allow negative decimals: -123.45, -.45, -123, 123.45, .45, 123
+      // Pattern: optional minus, then either (digits with optional decimal+digits) or (decimal with digits)
+      pattern = '^-?(\\d+(\\.\\d+)?|\\.\\d+)$';
+    } else if (isDecimalAllowed) {
+      // Allow decimals: 123.45, .45, 123
+      // Pattern: either (digits with optional decimal+digits) or (decimal with digits)
+      pattern = '^(\\d+(\\.\\d+)?|\\.\\d+)$';
+    } else if (isNegativeAllowed) {
+      // Allow negative integers: -123, 123
+      pattern = '^-?\\d+$';
+    } else {
+      // Allow only positive integers: 123
+      pattern = '^\\d+$';
     }
-
-    // Add digits (zero or more)
-    pattern += '\\d*';
-
-    // Add optional decimal portion if allowed
-    if (isDecimalAllowed) {
-      pattern += '(\\.\\d*)?';
-    }
-
-    // End with ending anchor
-    pattern += '$';
 
     // Create regex from dynamic pattern
     const regex = new RegExp(pattern);
