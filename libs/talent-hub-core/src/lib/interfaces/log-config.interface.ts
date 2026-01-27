@@ -1,51 +1,145 @@
 /**
  * Copyright (c) 2026 Talent Hub. All rights reserved.
+ * This file is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written consent from Talent Hub.
  *
- * This software is proprietary and confidential.
- * Unauthorized reproduction or distribution is prohibited.
+ * @author Talent Hub Team
+ * @version 1.0.0
  */
 
 import { LogLevel } from '../enums';
 
 /**
- * LogConfig - Configuration interface for application logging.
+ * Configuration interface for application logging.
  *
- * This interface defines the structure for configuring logging behavior in the application.
- * It allows you to set the log level, enable/disable server-side logging, and specify the
- * endpoint for remote log storage.
+ * This interface defines the structure for configuring logging behavior in the
+ * application. It allows you to set the log level, enable/disable server-side
+ * logging, and specify the endpoint for remote log storage.
  *
- * Usage example:
- *   logConfig: {
- *     level: LogLevel.Warn,
- *     logToServer: true,
- *     logEndpoint: '/api/logs'
- *   }
+ * @remarks
+ * **Properties:**
+ * - `level` - Minimum severity level to log (see `LogLevel` enum).
+ * - `logToServer` - Whether to send logs to a remote server.
+ * - `logEndpoint` - URL endpoint for server-side log collection.
  *
- * Notes:
- * - 'level' controls the minimum severity to log (see LogLevel enum).
- * - If 'logToServer' is true, logs are sent to 'logEndpoint' (if provided).
- * - If 'logEndpoint' is omitted or falsy, logs are not sent to the server even if 'logToServer' is true.
- * - If 'logToServer' is false, logs are only written to the browser console.
- * - All properties are required except 'logEndpoint', which is optional for local/dev-only logging.
+ * **Behavior:**
+ * - Only logs at or above the configured `level` are processed.
+ * - If `logToServer` is `true` and `logEndpoint` is provided, logs are sent to the server.
+ * - If `logToServer` is `false`, logs are only written to the browser console.
+ * - If `logEndpoint` is omitted, server logging is disabled even if `logToServer` is `true`.
+ *
+ * **Best Practices:**
+ * - Use `LogLevel.Debug` or `LogLevel.Trace` in development for verbose output.
+ * - Use `LogLevel.Warn` or `LogLevel.Error` in production to reduce noise.
+ * - Enable `logToServer` in production for centralized log monitoring.
+ *
+ * @example
+ * ```typescript
+ * // Development configuration (verbose, local only)
+ * const devLogConfig: LogConfig = {
+ *   level: LogLevel.Debug,
+ *   logToServer: false,
+ * };
+ *
+ * // Production configuration (errors only, send to server)
+ * const prodLogConfig: LogConfig = {
+ *   level: LogLevel.Error,
+ *   logToServer: true,
+ *   logEndpoint: '/api/logs',
+ * };
+ *
+ * // Use in AppConfig
+ * const appConfig: AppConfig = {
+ *   appName: 'Talent Hub',
+ *   appVersion: '1.0.0',
+ *   environment: Environment.Production,
+ *   logConfig: prodLogConfig,
+ * };
+ * ```
+ *
+ * @see LogLevel
+ * @see LoggerService
+ * @see AppConfig
+ * @publicApi
  */
 export interface LogConfig {
   /**
-   * The minimum log level to record (see LogLevel enum).
-   * Only logs at this level or higher will be processed.
-   * Example: LogLevel.Info, LogLevel.Error, etc.
+   * The minimum log level to record.
+   *
+   * Only logs at this level or higher severity will be processed. Logs below
+   * this level are ignored. Use `LogLevel` enum values to set this property.
+   *
+   * @remarks
+   * Log levels in order of severity (lowest to highest):
+   * - `LogLevel.Trace` - Most verbose, detailed tracing information.
+   * - `LogLevel.Debug` - Debugging information for developers.
+   * - `LogLevel.Info` - General informational messages.
+   * - `LogLevel.Warn` - Warning conditions that may require attention.
+   * - `LogLevel.Error` - Error conditions that should be investigated.
+   * - `LogLevel.Fatal` - Critical errors that may cause application failure.
+   *
+   * @see LogLevel
+   *
+   * @example
+   * ```typescript
+   * // Only log warnings and above
+   * { level: LogLevel.Warn }
+   *
+   * // Log everything including debug messages
+   * { level: LogLevel.Debug }
+   *
+   * // Only log errors and fatal messages
+   * { level: LogLevel.Error }
+   * ```
    */
   level: LogLevel;
 
   /**
-   * If true, logs will be sent to the server endpoint (see logEndpoint).
-   * If false, logs are only written to the browser console.
+   * Whether to send logs to a remote server endpoint.
+   *
+   * When `true`, logs are sent to the URL specified in `logEndpoint` in addition
+   * to being written to the browser console. When `false`, logs are only written
+   * to the console.
+   *
+   * @remarks
+   * - Requires `logEndpoint` to be set for server logging to work.
+   * - Consider the performance impact of sending logs to the server.
+   * - Use batching and throttling for high-volume logging scenarios.
+   *
+   * @example
+   * ```typescript
+   * // Enable server logging
+   * { logToServer: true, logEndpoint: '/api/logs' }
+   *
+   * // Disable server logging (console only)
+   * { logToServer: false }
+   * ```
    */
   logToServer: boolean;
 
   /**
-   * The URL endpoint where logs should be sent if logToServer is enabled.
-   * If omitted or falsy, logs are not sent to the server even if logToServer is true.
-   * Example: '/api/logs'
+   * The URL endpoint where logs should be sent.
+   *
+   * Required when `logToServer` is `true`. If omitted or falsy, logs are not
+   * sent to the server even if `logToServer` is enabled.
+   *
+   * @remarks
+   * - Should be a relative or absolute URL to your log collection service.
+   * - Consider security: use HTTPS in production.
+   * - The endpoint should accept POST requests with log data in the body.
+   *
+   * @example
+   * ```typescript
+   * // Relative endpoint
+   * { logEndpoint: '/api/logs' }
+   *
+   * // Absolute endpoint
+   * { logEndpoint: 'https://logs.example.com/v1/ingest' }
+   *
+   * // Omitted (no server logging)
+   * { logToServer: false }
+   * ```
    */
   logEndpoint?: string;
 }

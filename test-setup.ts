@@ -1,4 +1,14 @@
 /**
+ * Copyright (c) 2026 Talent Hub. All rights reserved.
+ * This file is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written consent from Talent Hub.
+ *
+ * @author Talent Hub Team
+ * @version 1.0.0
+ */
+
+/**
  * Test setup file for Vitest
  * This file is loaded before all tests run
  */

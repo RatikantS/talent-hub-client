@@ -1,8 +1,11 @@
 /**
  * Copyright (c) 2026 Talent Hub. All rights reserved.
+ * This file is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written consent from Talent Hub.
  *
- * This software is proprietary and confidential.
- * Unauthorized reproduction or distribution is prohibited.
+ * @author Talent Hub Team
+ * @version 1.0.0
  */
 
 import { inject, Injectable } from '@angular/core';
@@ -12,23 +15,76 @@ import { Observable } from 'rxjs';
 import { AuthService } from '../services';
 
 /**
- * AuthInterceptor automatically adds a Bearer token to outgoing HTTP requests if available.
+ * HTTP interceptor that automatically adds Bearer authentication tokens to outgoing requests.
  *
- * - Injects AuthService using Angular's inject() function.
- * - Retrieves the authentication token from AuthService.
- * - If a token exists and the request does not already have an Authorization header,
- *   it clones the request and adds the Authorization header as 'Bearer {token}'.
- * - If no token is present or the Authorization header already exists, the request is forwarded unchanged.
+ * This interceptor ensures that authenticated API requests include the `Authorization` header
+ * with a Bearer token. It retrieves the token from `AuthService` and intelligently skips
+ * requests that already have an `Authorization` header or when no token is available.
+ *
+ * @remarks
+ * **Behavior:**
+ * - Retrieves the authentication token from `AuthService.getToken()`.
+ * - Adds `Authorization: Bearer {token}` header to requests if a token exists.
+ * - Skips adding the header if the request already has an `Authorization` header.
+ * - Passes requests through unchanged if no token is available.
+ *
+ * **Security Considerations:**
+ * - Tokens are only added to requests; they are not logged or exposed.
+ * - Consider combining with HTTPS to protect tokens in transit.
+ * - For sensitive operations, verify token validity before making requests.
+ *
+ * **Request Transformation:**
+ * | Scenario | Result |
+ * |----------|--------|
+ * | Token exists, no Auth header | Adds `Authorization: Bearer {token}` |
+ * | Token exists, Auth header present | Request unchanged (respects existing header) |
+ * | No token available | Request unchanged |
  *
  * @example
- *   // If token = 'abc123' and no Authorization header exists:
- *   // Adds header: Authorization: Bearer abc123
+ * ```typescript
+ * // In app.config.ts - Register the interceptor
+ * export const appConfig: ApplicationConfig = {
+ *   providers: [
+ *     provideHttpClient(withInterceptorsFromDi()),
+ *   ],
+ * };
+ *
+ * // All authenticated requests automatically include the token
+ * httpClient.get('/api/users');
+ * // Request headers: { Authorization: 'Bearer abc123...' }
+ *
+ * // Requests with existing Authorization headers are unchanged
+ * httpClient.get('/api/external', {
+ *   headers: { Authorization: 'Basic xyz' }
+ * });
+ * // Request headers: { Authorization: 'Basic xyz' } (unchanged)
+ * ```
+ *
+ * @see AuthService
+ * @see AuthStore
+ * @see HttpInterceptor
+ * @publicApi
  */
 @Injectable({ providedIn: 'root' })
 export class AuthInterceptor implements HttpInterceptor {
   /**
-   * Returns the AuthService instance for authentication.
-   * Overridable for testing.
+   * Returns the AuthService instance for retrieving authentication tokens.
+   *
+   * The `AuthService` provides the current user's authentication token via
+   * `getToken()`. This method is protected to allow subclasses to override
+   * it for testing or custom authentication sources.
+   *
+   * @returns The `AuthService` instance.
+   *
+   * @remarks
+   * Override this method in tests to provide a mock `AuthService`:
+   * ```typescript
+   * class MockAuthInterceptor extends AuthInterceptor {
+   *   protected override getAuthService(): AuthService {
+   *     return mockAuthService;
+   *   }
+   * }
+   * ```
    */
   protected getAuthService(): AuthService {
     return inject(AuthService);
@@ -37,13 +93,34 @@ export class AuthInterceptor implements HttpInterceptor {
   /**
    * Intercepts HTTP requests and adds the Authorization header if a token is available.
    *
-   * @param req - The outgoing HTTP request.
-   * @param next - The next handler in the HTTP pipeline.
-   * @returns An Observable of the HTTP event stream.
+   * This method is called for every HTTP request made through Angular's `HttpClient`.
+   * It checks for an available authentication token and adds it to the request headers.
+   *
+   * @param req - The outgoing HTTP request to intercept.
+   * @param next - The next handler in the HTTP interceptor chain.
+   * @returns An `Observable` of the HTTP event stream.
+   *
+   * @remarks
+   * **Processing Logic:**
+   * 1. Retrieve the authentication token from `AuthService`.
+   * 2. If no token exists, pass the request through unchanged.
+   * 3. If the request already has an `Authorization` header, pass it through unchanged.
+   * 4. Otherwise, clone the request and add `Authorization: Bearer {token}`.
+   * 5. Forward the modified request to the next handler.
+   *
+   * @example
+   * ```typescript
+   * // This happens automatically for all HttpClient requests
+   * // If user is authenticated with token 'abc123':
+   * // Original request: GET /api/profile
+   * // Modified request: GET /api/profile
+   * //   Headers: { Authorization: 'Bearer abc123' }
+   * ```
    */
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     // Use the overridable method to get the AuthService instance.
     const authService: AuthService = this.getAuthService();
+
     // Retrieve the authentication token from the AuthService.
     const token: string | null = authService.getToken();
 
@@ -56,6 +133,7 @@ export class AuthInterceptor implements HttpInterceptor {
     const authReq: HttpRequest<unknown> = req.clone({
       setHeaders: { Authorization: `Bearer ${token}` },
     });
+
     return next.handle(authReq);
   }
 }

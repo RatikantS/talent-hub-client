@@ -1,21 +1,27 @@
 /**
  * Copyright (c) 2026 Talent Hub. All rights reserved.
+ * This file is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written consent from Talent Hub.
  *
- * This software is proprietary and confidential.
- * Unauthorized reproduction or distribution is prohibited.
+ * @author Talent Hub Team
+ * @version 1.0.0
  */
 
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { Injector, runInInjectionContext } from '@angular/core';
 
 import { AppStore } from './app.store';
 import { Environment, LogLevel, Theme } from '../../enums';
 import { AppConfig, UserPreference } from '../../interfaces';
 
 describe('AppStore', () => {
-  let store: typeof AppStore;
+  let store: InstanceType<typeof AppStore>;
+  let injector: Injector;
 
   beforeEach(() => {
-    store = new AppStore();
+    injector = Injector.create({ providers: [{ provide: AppStore, useClass: AppStore }] });
+    store = runInInjectionContext(injector, () => injector.get(AppStore));
     // Reset all state to initial values before each test using only public API
     store.setConfig(null);
     store.setPreference(null);
@@ -53,7 +59,7 @@ describe('AppStore', () => {
       logConfig: { level: LogLevel.Error, logToServer: false, logEndpoint: '/api/logs' },
     };
     const pref: UserPreference = { theme: Theme.Light, language: 'en' };
-    store.initialize(config, pref, LogLevel.Error);
+    store.initialize(config, pref);
     expect(store.getEnvironment()).toBe(Environment.Production);
     expect(store.getLogLevel()).toBe(LogLevel.Error);
     expect(store.isInitialized()).toBe(true);
@@ -163,10 +169,6 @@ describe('AppStore', () => {
     store.setLoading(false);
     expect(store.getIsLoading()).toBe(false);
   });
-  it('should return false for getIsLoading if state is undefined', () => {
-    store.isLoading = undefined;
-    expect(store.getIsLoading()).toBe(false);
-  });
 
   it('should set and clear error', () => {
     store.setError('Test error');
@@ -184,8 +186,9 @@ describe('AppStore', () => {
     expect(store.getError()).toEqual({ code: 500 });
   });
 
-  it('should return undefined for getError if state is undefined', () => {
-    store.error = undefined;
+  it('should return undefined for getError after clearing', () => {
+    store.setError('some error');
+    store.clearError();
     expect(store.getError()).toBeUndefined();
   });
 
@@ -243,15 +246,13 @@ describe('AppStore', () => {
     expect(store.isFeatureEnabled('any')).toBe(false);
   });
 
-  it('should return false for isFeatureEnabled if features is null or undefined', () => {
+  it('should return false for isFeatureEnabled if features is null', () => {
     store.setFeatures(null);
-    expect(store.isFeatureEnabled('foo')).toBe(false);
-    store.features = undefined;
     expect(store.isFeatureEnabled('foo')).toBe(false);
   });
 
   it('should return false for missing feature', () => {
-    store.setConfig({ appName: 'Talent Hub', appVersion: '1.0.0', features: { dashboard: true } });
+    store.setFeatures({ dashboard: true });
     expect(store.isFeatureEnabled('unknown')).toBe(false);
   });
 
@@ -291,11 +292,6 @@ describe('AppStore', () => {
 
   it('should return default environment if config is null', () => {
     store.setConfig(null);
-    expect(store.currentEnvironment()).toBe(Environment.Development); // Assuming DEFAULT_ENVIRONMENT is Development
-  });
-
-  it('should return default environment if environment is missing', () => {
-    store.setConfig({ appName: 'Talent Hub', appVersion: '1.0.0' });
     expect(store.currentEnvironment()).toBe(Environment.Development); // Assuming DEFAULT_ENVIRONMENT is Development
   });
 

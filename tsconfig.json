@@ -11,9 +11,24 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
+    "baseUrl": ".",
     "paths": {
-      "talent-hub-core": ["./libs/talent-hub-core/src/public-api.ts"],
-      "talent-hub-ui": ["./libs/talent-hub-ui/src/public-api.ts"]
+      "@talent-hub/core": ["./libs/talent-hub-core/src/public-api.ts"],
+      "@talent-hub/core/services": ["./libs/talent-hub-core/src/lib/services/index.ts"],
+      "@talent-hub/core/guards": ["./libs/talent-hub-core/src/lib/guards/index.ts"],
+      "@talent-hub/core/interceptors": ["./libs/talent-hub-core/src/lib/interceptors/index.ts"],
+      "@talent-hub/core/store": ["./libs/talent-hub-core/src/lib/store/index.ts"],
+      "@talent-hub/core/utils": ["./libs/talent-hub-core/src/lib/utils/index.ts"],
+      "@talent-hub/core/interfaces": ["./libs/talent-hub-core/src/lib/interfaces/index.ts"],
+      "@talent-hub/core/enums": ["./libs/talent-hub-core/src/lib/enums/index.ts"],
+      "@talent-hub/core/models": ["./libs/talent-hub-core/src/lib/models/index.ts"],
+      "@talent-hub/core/tokens": ["./libs/talent-hub-core/src/lib/tokens/index.ts"],
+      "@talent-hub/core/constants": ["./libs/talent-hub-core/src/lib/constants/index.ts"],
+      "@talent-hub/core/types": ["./libs/talent-hub-core/src/lib/types/index.ts"],
+      "@talent-hub/ui": ["./libs/talent-hub-ui/src/public-api.ts"],
+      "@talent-hub/ui/components": ["./libs/talent-hub-ui/src/lib/components/index.ts"],
+      "@talent-hub/ui/directives": ["./libs/talent-hub-ui/src/lib/directives/index.ts"],
+      "@talent-hub/ui/pipes": ["./libs/talent-hub-ui/src/lib/pipes/index.ts"]
     },
     "module": "preserve"
   },

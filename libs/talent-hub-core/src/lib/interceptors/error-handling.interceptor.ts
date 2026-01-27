@@ -1,8 +1,11 @@
 /**
  * Copyright (c) 2026 Talent Hub. All rights reserved.
+ * This file is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written consent from Talent Hub.
  *
- * This software is proprietary and confidential.
- * Unauthorized reproduction or distribution is prohibited.
+ * @author Talent Hub Team
+ * @version 1.0.0
  */
 
 import { inject, Injectable } from '@angular/core';
@@ -20,61 +23,170 @@ import { EventBusService, LoggerService } from '../services';
 import { APP_CONSTANT } from '../constants';
 
 /**
- * ErrorHandlingInterceptor
+ * HTTP interceptor that provides centralized error handling for all HTTP requests.
  *
- * This HTTP interceptor logs all HTTP errors and publishes them as events via the EventBusService.
+ * This interceptor catches HTTP errors, logs them using `LoggerService`, and publishes
+ * error events via `EventBusService` for global error handling, notifications, or UI feedback.
+ * It enables consistent error handling across all micro-frontends without duplicating code.
  *
- * - Logs errors using LoggerService for diagnostics and audit.
- * - Publishes error details to the event bus for global error handling, notifications, or UI feedback.
- * - Uses event keys from APP_CONSTANT.EVENT_BUS_KEYS for consistency and maintainability.
+ * @remarks
+ * **Behavior:**
+ * - Catches all HTTP errors from `HttpClient` requests.
+ * - Logs errors with detailed context using `LoggerService`.
+ * - Publishes error events via `EventBusService` for application-wide handling.
+ * - Re-throws errors so they can be handled by calling code if needed.
  *
- * Usage:
- *   Provided in root; automatically intercepts all HTTP requests in the app.
+ * **Event Keys:**
+ * | Event Key | Trigger | Payload |
+ * |-----------|---------|---------|
+ * | `th:http.error` | `HttpErrorResponse` | `{ status, message, error, url, method, requestUrl }` |
+ * | `th:http.unknown.error` | Non-HTTP errors | `{ error }` |
  *
- * Event keys:
- *   - th:http.error: Published for all HttpErrorResponse errors, with details (status, message, error, url, method, requestUrl).
- *   - th:http.unknown.error: Published for unknown errors, with the error object.
+ * **Error Types Handled:**
+ * - `HttpErrorResponse` - Server errors (4xx, 5xx), network errors, timeout.
+ * - Unknown errors - Unexpected JavaScript errors during request processing.
+ *
+ * **Integration:**
+ * Subscribe to error events in a global error handler or notification service:
+ * ```typescript
+ * eventBus.on(APP_CONSTANT.EVENT_BUS_KEYS.HTTP_ERROR).subscribe((meta) => {
+ *   showErrorNotification(meta.data.message);
+ * });
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // In app.config.ts - Register the interceptor
+ * export const appConfig: ApplicationConfig = {
+ *   providers: [
+ *     provideHttpClient(withInterceptorsFromDi()),
+ *   ],
+ * };
+ *
+ * // Errors are automatically logged and published
+ * httpClient.get('/api/invalid-endpoint').subscribe({
+ *   error: (err) => {
+ *     // Error is already logged by interceptor
+ *     // Event is already published to event bus
+ *     console.log('Handle in component if needed');
+ *   }
+ * });
+ *
+ * // Subscribe to global error events
+ * eventBus.on<HttpErrorPayload>(APP_CONSTANT.EVENT_BUS_KEYS.HTTP_ERROR)
+ *   .subscribe((meta) => {
+ *     if (meta.data?.status === 401) {
+ *       redirectToLogin();
+ *     } else if (meta.data?.status === 500) {
+ *       showServerErrorModal();
+ *     }
+ *   });
+ * ```
+ *
+ * @see LoggerService
+ * @see EventBusService
+ * @see APP_CONSTANT
+ * @see HttpInterceptor
+ * @publicApi
  */
 @Injectable({ providedIn: 'root' })
 export class ErrorHandlingInterceptor implements HttpInterceptor {
   /**
    * Returns the LoggerService instance for error logging.
-   * Overridable for testing.
+   *
+   * The `LoggerService` is used to log error details for diagnostics and auditing.
+   * This method is protected to allow subclasses to override it for testing.
+   *
+   * @returns The `LoggerService` instance.
+   *
+   * @remarks
+   * Override this method in tests to provide a mock logger:
+   * ```typescript
+   * class MockErrorInterceptor extends ErrorHandlingInterceptor {
+   *   protected override getLogger(): LoggerService {
+   *     return mockLogger;
+   *   }
+   * }
+   * ```
    */
   protected getLogger(): LoggerService {
     return inject(LoggerService);
   }
+
   /**
    * Returns the EventBusService instance for publishing error events.
-   * Overridable for testing.
+   *
+   * The `EventBusService` is used to broadcast error events across the application
+   * for centralized handling. This method is protected for testability.
+   *
+   * @returns The `EventBusService` instance.
+   *
+   * @remarks
+   * Override this method in tests to provide a mock event bus:
+   * ```typescript
+   * class MockErrorInterceptor extends ErrorHandlingInterceptor {
+   *   protected override getEventBus(): EventBusService {
+   *     return mockEventBus;
+   *   }
+   * }
+   * ```
    */
   protected getEventBus(): EventBusService {
     return inject(EventBusService);
   }
 
   /**
-   * Intercepts HTTP requests and handles errors.
+   * Intercepts HTTP requests and provides centralized error handling.
    *
-   * - Logs HTTP errors using LoggerService.
-   * - Publishes error events using EventBusService.
+   * This method is called for every HTTP request made through Angular's `HttpClient`.
+   * It catches errors, logs them, publishes events, and re-throws for local handling.
    *
-   * @param req - The outgoing HTTP request.
-   * @param next - The next handler in the HTTP pipeline.
-   * @returns Observable of the HTTP event stream.
+   * @param req - The outgoing HTTP request to intercept.
+   * @param next - The next handler in the HTTP interceptor chain.
+   * @returns An `Observable` of the HTTP event stream.
+   *
+   * @remarks
+   * **Processing Logic:**
+   * 1. Forward the request to the next handler.
+   * 2. If an error occurs, determine if it's an `HttpErrorResponse` or unknown error.
+   * 3. Log the error with appropriate context using `LoggerService`.
+   * 4. Publish the error event via `EventBusService` with relevant details.
+   * 5. Re-throw the error so calling code can handle it if needed.
+   *
+   * **Error Payload for `HttpErrorResponse`:**
+   * ```typescript
+   * {
+   *   status: 404,
+   *   message: 'Not Found',
+   *   error: { ... },
+   *   url: 'https://api.example.com/users/123',
+   *   method: 'GET',
+   *   requestUrl: '/users/123'
+   * }
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Error handling happens automatically
+   * // Console output: 'HTTP Error: { status: 404, message: "Not Found", ... }'
+   * // Event published: 'th:http.error' with payload
+   * ```
    */
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     const logger: LoggerService = this.getLogger();
     const eventBus: EventBusService = this.getEventBus();
+
     return next.handle(req).pipe(
       catchError((error: unknown) => {
-        // Log the error using LoggerService
         if (error instanceof HttpErrorResponse) {
+          // Log HTTP errors with detailed context
           logger.error('HTTP Error:', {
             status: error.status,
             message: error.message,
             error: error.error,
           });
-          // Publish the error event for global error handling
+
+          // Publish error event for global handling (notifications, redirects, etc.)
           eventBus.publish(APP_CONSTANT.EVENT_BUS_KEYS.HTTP_ERROR, {
             status: error.status,
             message: error.message,
@@ -84,12 +196,14 @@ export class ErrorHandlingInterceptor implements HttpInterceptor {
             requestUrl: req.url,
           });
         } else {
-          // Handle non-HTTP errors
+          // Handle unexpected non-HTTP errors
           logger.error('Unknown HTTP Error:', error);
+
           // Publish unknown error event
           eventBus.publish(APP_CONSTANT.EVENT_BUS_KEYS.HTTP_UNKNOWN_ERROR, { error });
         }
-        // Rethrow the error so it can be handled elsewhere if needed
+
+        // Re-throw the error so it can be handled by calling code if needed
         return throwError((): unknown => error);
       }),
     );

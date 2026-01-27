@@ -1,19 +1,25 @@
 /**
  * Copyright (c) 2026 Talent Hub. All rights reserved.
+ * This file is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written consent from Talent Hub.
  *
- * This software is proprietary and confidential.
- * Unauthorized reproduction or distribution is prohibited.
+ * @author Talent Hub Team
+ * @version 1.0.0
  */
 
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { Injector, runInInjectionContext } from '@angular/core';
 
 import { AuthStore } from './auth.store';
 
 describe('AuthStore', () => {
-  let store: typeof AuthStore;
+  let store: InstanceType<typeof AuthStore>;
+  let injector: Injector;
 
   beforeEach(() => {
-    store = new AuthStore();
+    injector = Injector.create({ providers: [{ provide: AuthStore, useClass: AuthStore }] });
+    store = runInInjectionContext(injector, () => injector.get(AuthStore));
     // Reset state to initial values before each test
     store.setToken(null);
     store.setUser(null);
@@ -134,9 +140,9 @@ describe('AuthStore', () => {
     expect(store.getPermissions()).toEqual([]);
     store.setToken(null);
     expect(store.getToken()).toBeNull();
-    store.setUser(undefined);
+    store.setUser(null);
     expect(store.getUserId()).toBe('');
-    store.setToken(undefined);
+    store.setToken(null);
     expect(store.getToken()).toBeNull();
   });
 
@@ -151,7 +157,14 @@ describe('AuthStore', () => {
     });
     expect(store.hasRole('admin')).toBe(false);
     expect(store.hasPermission('read')).toBe(false);
-    store.setUser({ id: 'u4', email: 'z@w.com', firstName: 'Z', lastName: 'W' });
+    store.setUser({
+      id: 'u4',
+      email: 'z@w.com',
+      firstName: 'Z',
+      lastName: 'W',
+      roles: [],
+      permissions: [],
+    });
     expect(store.hasRole('admin')).toBe(false);
     expect(store.hasPermission('read')).toBe(false);
   });

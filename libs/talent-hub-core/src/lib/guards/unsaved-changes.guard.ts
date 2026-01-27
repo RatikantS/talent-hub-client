@@ -1,57 +1,155 @@
 /**
  * Copyright (c) 2026 Talent Hub. All rights reserved.
+ * This file is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written consent from Talent Hub.
  *
- * This software is proprietary and confidential.
- * Unauthorized reproduction or distribution is prohibited.
+ * @author Talent Hub Team
+ * @version 1.0.0
  */
 
 import { ActivatedRouteSnapshot, CanDeactivateFn, RouterStateSnapshot } from '@angular/router';
 
 /**
- * CanComponentDeactivate - Interface for components that support unsaved changes detection.
+ * Interface for components that support unsaved changes detection.
  *
- * Implement this interface in your component to use the unsavedChangesGuard.
+ * Implement this interface in components that have forms or editable content
+ * to enable the `unsavedChangesGuard` to detect and warn users about unsaved data.
  *
- * @property hasUnsavedChanges - Returns true if the component has unsaved changes.
- * @property unsavedChangesMessage - Optional custom message for the confirmation dialog.
+ * @remarks
+ * **Required Method:**
+ * - `hasUnsavedChanges()` - Must return `true` if the component has unsaved changes.
+ *
+ * **Optional Property:**
+ * - `unsavedChangesMessage` - Custom message for the confirmation dialog.
+ *
+ * @example
+ * ```typescript
+ * @Component({
+ *   selector: 'app-edit-profile',
+ *   template: `...`,
+ * })
+ * export class EditProfileComponent implements CanComponentDeactivate {
+ *   private readonly form = inject(FormBuilder).group({
+ *     name: [''],
+ *     email: [''],
+ *   });
+ *
+ *   // Custom confirmation message
+ *   unsavedChangesMessage = 'Your profile changes will be lost. Continue?';
+ *
+ *   // Return true if form has been modified
+ *   hasUnsavedChanges(): boolean {
+ *     return this.form.dirty;
+ *   }
+ * }
+ * ```
+ *
+ * @see unsavedChangesGuard
+ * @publicApi
  */
 export interface CanComponentDeactivate {
   /**
-   * Returns true if the component has unsaved changes.
+   * Returns `true` if the component has unsaved changes.
+   *
+   * This method is called by the `unsavedChangesGuard` before navigation.
+   * If it returns `true`, the user is prompted with a confirmation dialog.
+   *
+   * @returns `true` if there are unsaved changes, `false` otherwise.
+   *
+   * @example
+   * ```typescript
+   * hasUnsavedChanges(): boolean {
+   *   return this.form.dirty || this.dataModified;
+   * }
+   * ```
    */
   hasUnsavedChanges: () => boolean;
+
   /**
-   * Optional custom unsaved changes message for the confirmation dialog.
-   * If not provided, a default message will be used.
+   * Optional custom message for the unsaved changes confirmation dialog.
+   *
+   * If not provided, the guard uses a default message:
+   * "You have unsaved changes. Are you sure you want to leave?"
+   *
+   * @example
+   * ```typescript
+   * unsavedChangesMessage = 'Discard changes to this document?';
+   * ```
    */
   unsavedChangesMessage?: string;
 }
 
 /**
- * unsavedChangesGuard - Prevents navigation away from a route if there are unsaved changes.
+ * Route guard that prevents navigation away from a route if there are unsaved changes.
  *
- * This guard checks if the component implements the CanComponentDeactivate interface and
- * has unsaved changes. If so, it prompts the user with a confirmation dialog. If the user
- * confirms, navigation proceeds; otherwise, navigation is cancelled.
+ * This functional deactivation guard checks if the component implements `CanComponentDeactivate`
+ * and has unsaved changes. If so, it prompts the user with a browser confirmation dialog.
+ * Navigation proceeds only if the user confirms; otherwise, it is cancelled.
  *
- * Usage Example (in route config):
+ * @remarks
+ * **Behavior:**
+ * - Calls `component.hasUnsavedChanges()` to check for unsaved data.
+ * - If unsaved changes exist, shows a browser `confirm()` dialog.
+ * - Returns `true` (allow navigation) if no changes or user confirms.
+ * - Returns `false` (block navigation) if user cancels the dialog.
+ *
+ * **Customization:**
+ * - Set `unsavedChangesMessage` on the component for a custom dialog message.
+ * - Default message: "You have unsaved changes. Are you sure you want to leave?"
+ *
+ * **Implementation Details:**
+ * - Uses Angular's functional guard pattern (`CanDeactivateFn`).
+ * - Works with any component implementing `CanComponentDeactivate`.
+ * - Uses browser's native `window.confirm()` for the dialog.
+ * - Designed for standalone Angular applications.
+ *
+ * **Limitations:**
+ * - Browser `confirm()` cannot be styled; consider custom modal for better UX.
+ * - Does not prevent browser refresh or tab close (use `beforeunload` event).
+ *
+ * @param component - The component instance implementing `CanComponentDeactivate`.
+ * @param _currentRoute - The current route snapshot (unused but required by interface).
+ * @param _currentState - The current router state (unused but required by interface).
+ * @param _nextState - The next router state (unused but required by interface).
+ * @returns `true` if navigation is allowed, `false` if cancelled by user.
+ *
+ * @example
+ * ```typescript
+ * // Route configuration
+ * const routes: Routes = [
  *   {
- *     path: 'edit',
+ *     path: 'edit/:id',
+ *     component: EditComponent,
  *     canDeactivate: [unsavedChangesGuard],
- *     // ...
+ *   },
+ * ];
+ *
+ * // Component implementation
+ * @Component({ ... })
+ * export class EditComponent implements CanComponentDeactivate {
+ *   private isDirty = false;
+ *
+ *   unsavedChangesMessage = 'You have unsaved edits. Discard them?';
+ *
+ *   hasUnsavedChanges(): boolean {
+ *     return this.isDirty;
  *   }
  *
- * Implementation Details:
- * - Uses Angular's CanDeactivateFn for type safety.
- * - Designed for use in standalone Angular applications with signals and strict typing.
- * - Follows best practices for user experience and data loss prevention.
- * - The confirmation message can be customized by setting unsavedChangesMessage on the component.
+ *   onFormChange(): void {
+ *     this.isDirty = true;
+ *   }
  *
- * @param component The component instance implementing CanComponentDeactivate
- * @param _currentRoute The current ActivatedRouteSnapshot (unused, but required by interface)
- * @param _currentState The current RouterStateSnapshot (unused, but required by interface)
- * @param _nextState The next RouterStateSnapshot (unused, but required by interface)
- * @returns true if navigation is allowed, false if cancelled by the user
+ *   onSave(): void {
+ *     this.isDirty = false;
+ *     // Save logic...
+ *   }
+ * }
+ * ```
+ *
+ * @see CanComponentDeactivate
+ * @see CanDeactivateFn
+ * @publicApi
  */
 export const unsavedChangesGuard: CanDeactivateFn<CanComponentDeactivate> = (
   component: CanComponentDeactivate,
@@ -59,13 +157,15 @@ export const unsavedChangesGuard: CanDeactivateFn<CanComponentDeactivate> = (
   _currentState: RouterStateSnapshot,
   _nextState: RouterStateSnapshot,
 ): boolean => {
-  // Use message from component if present, otherwise use the default message
+  // Use custom message from component if present, otherwise use default
   const message: string =
     component.unsavedChangesMessage || 'You have unsaved changes. Are you sure you want to leave?';
+
   // If the component has unsaved changes, prompt the user for confirmation
   if (component.hasUnsavedChanges()) {
     return window.confirm(message);
   }
-  // Otherwise, allow navigation
+
+  // No unsaved changes, allow navigation
   return true;
 };

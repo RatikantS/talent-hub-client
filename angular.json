@@ -1292,7 +1292,8 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "tsConfig": "libs/talent-hub-core/tsconfig.spec.json"
+            "tsConfig": "libs/talent-hub-core/tsconfig.spec.json",
+            "runnerConfig": "libs/talent-hub-core/vitest.config.ts"
           }
         }
       }

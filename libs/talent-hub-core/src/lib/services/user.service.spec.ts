@@ -1,18 +1,36 @@
 /**
  * Copyright (c) 2026 Talent Hub. All rights reserved.
+ * This file is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written consent from Talent Hub.
  *
- * This software is proprietary and confidential.
- * Unauthorized reproduction or distribution is prohibited.
+ * @author Talent Hub Team
+ * @version 1.0.0
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { UserService } from '../services';
+import { User } from '../interfaces';
 
-// Use vi.hoisted to declare variables that can be accessed inside vi.mock
-const { mockAppStore } = vi.hoisted(() => {
+// Use vi.hoisted to declare mock store that can be accessed inside vi.mock
+const { mockAuthStore } = vi.hoisted(() => {
+  let mockUser: User | null = null;
+  let mockRoles: string[] = [];
+
   return {
-    mockAppStore: { getPreference: vi.fn() },
+    mockAuthStore: {
+      userRoles: vi.fn(() => mockRoles),
+      user: vi.fn(() => mockUser),
+      setUser: (user: User | null) => {
+        mockUser = user;
+        mockRoles = user?.roles ?? [];
+      },
+      reset: () => {
+        mockUser = null;
+        mockRoles = [];
+      },
+    },
   };
 });
 
@@ -20,17 +38,13 @@ const { mockAppStore } = vi.hoisted(() => {
 vi.mock('@angular/core', async (importOriginal) => {
   const actual = await importOriginal();
   return Object.assign({}, actual, {
-    inject: vi.fn((token: any) => {
+    inject: vi.fn((token: unknown) => {
+      // SignalStore tokens have name 'SignalStore', so check the string representation
       const tokenStr = String(token);
-      if (
-        token?.name === 'AppStore' ||
-        tokenStr.includes('AppStore') ||
-        token?.name === 'SignalStore' ||
-        tokenStr.includes('SignalStore')
-      ) {
-        return mockAppStore;
+      if (tokenStr.includes('SignalStore') || tokenStr.includes('AuthStore')) {
+        return mockAuthStore;
       }
-      throw new Error(`Unmocked token in test: ${token?.name || tokenStr}`);
+      throw new Error(`Unmocked token in test: ${tokenStr}`);
     }),
   });
 });
@@ -40,6 +54,7 @@ describe('UserService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuthStore.reset();
     service = new UserService();
   });
 
@@ -47,20 +62,34 @@ describe('UserService', () => {
     vi.restoreAllMocks();
   });
 
-  it('should return roles if present in user preference', () => {
-    mockAppStore.getPreference.mockReturnValue({ roles: ['admin', 'user'] });
+  it('should return roles if user has roles', () => {
+    mockAuthStore.setUser({
+      id: '1',
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      roles: ['admin', 'user'],
+      permissions: [],
+    });
     expect(service.roles()).toEqual(['admin', 'user']);
     expect(service.getUserRoles()).toEqual(['admin', 'user']);
   });
 
-  it('should return an empty array if roles is missing in user preference', () => {
-    mockAppStore.getPreference.mockReturnValue({});
+  it('should return an empty array if user has no roles', () => {
+    mockAuthStore.setUser({
+      id: '1',
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      roles: [],
+      permissions: [],
+    });
     expect(service.roles()).toEqual([]);
     expect(service.getUserRoles()).toEqual([]);
   });
 
-  it('should return an empty array if user preference is null', () => {
-    mockAppStore.getPreference.mockReturnValue(null);
+  it('should return an empty array if user is null', () => {
+    mockAuthStore.setUser(null);
     expect(service.roles()).toEqual([]);
     expect(service.getUserRoles()).toEqual([]);
   });

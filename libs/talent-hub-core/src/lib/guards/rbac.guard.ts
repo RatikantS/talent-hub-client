@@ -1,8 +1,11 @@
 /**
  * Copyright (c) 2026 Talent Hub. All rights reserved.
+ * This file is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written consent from Talent Hub.
  *
- * This software is proprietary and confidential.
- * Unauthorized reproduction or distribution is prohibited.
+ * @author Talent Hub Team
+ * @version 1.0.0
  */
 
 import { inject } from '@angular/core';
@@ -17,45 +20,107 @@ import {
 import { UserService } from '../services';
 
 /**
- * rbacGuard - Prevents access to routes for users lacking required roles (Role-Based Access Control).
+ * Route guard that implements Role-Based Access Control (RBAC) for protected routes.
  *
- * This guard uses the UserService to check if the current user has at least one of the roles
- * specified in the route's data.roles array. If no roles are required, access is allowed.
- * If the user has at least one required role, access is allowed. Otherwise, the user is redirected
- * to the /forbidden page or a custom URL provided in route data as 'rbacRedirectUrl'.
+ * This functional guard uses `UserService` to check if the current user has at least one
+ * of the required roles specified in the route's `data.roles` array. If the user has access,
+ * navigation is allowed; otherwise, they are redirected to a forbidden page.
  *
- * Usage Example (in route config):
+ * @remarks
+ * **Behavior:**
+ * - Allows access if no roles are required (`data.roles` is empty or not set).
+ * - Allows access if the user has at least one of the required roles.
+ * - Redirects to `/forbidden` (or custom URL) if the user lacks required roles.
+ *
+ * **Route Data Options:**
+ * | Property | Type | Default | Description |
+ * |----------|------|---------|-------------|
+ * | `roles` | `string[]` | `[]` | Required roles (user needs at least one) |
+ * | `rbacRedirectUrl` | `string` \| `string[]` | `['/forbidden']` | Custom redirect URL for unauthorized users |
+ *
+ * **Implementation Details:**
+ * - Uses Angular's functional guard pattern (`CanActivateFn`).
+ * - Uses `inject()` for dependency injection.
+ * - Performs OR logic: user needs ANY of the listed roles, not all.
+ * - Works with signal-based `UserService` and `AuthStore`.
+ *
+ * **Security Considerations:**
+ * - Always validate roles on the server; client-side guards are for UX only.
+ * - Combine with `authGuard` to ensure user is authenticated first.
+ * - Keep role names consistent between frontend and backend.
+ *
+ * @param route - The activated route snapshot containing role requirements.
+ * @param _state - The router state snapshot (unused but required by interface).
+ * @returns `true` if user has access, or a `UrlTree` to redirect to forbidden page.
+ *
+ * @example
+ * ```typescript
+ * // Require admin role
+ * const routes: Routes = [
  *   {
  *     path: 'admin',
- *     canActivate: [rbacGuard],
- *     data: { roles: ['admin', 'manager'], rbacRedirectUrl: ['/custom-forbidden'] },
- *   }
+ *     component: AdminComponent,
+ *     canActivate: [authGuard, rbacGuard],
+ *     data: { roles: ['admin'] },
+ *   },
+ * ];
  *
- * Implementation Details:
- * - Uses Angular's inject() for dependency injection (no constructor needed).
- * - Returns true if the user has access, otherwise returns a UrlTree to redirect to /forbidden (or a custom rbacRedirectUrl from route data).
- * - Designed for use in standalone Angular applications with signals and strict typing.
- * - Should be used for all RBAC-protected routes in the application.
+ * // Require any of multiple roles (OR logic)
+ * const routes: Routes = [
+ *   {
+ *     path: 'reports',
+ *     component: ReportsComponent,
+ *     canActivate: [authGuard, rbacGuard],
+ *     data: { roles: ['admin', 'manager', 'analyst'] },
+ *   },
+ * ];
  *
- * @param route The current ActivatedRouteSnapshot (used to read the required roles and custom redirect URL from route data)
- * @param _state The current RouterStateSnapshot (unused, but required by interface)
- * @returns true if the user has access, otherwise a UrlTree to redirect to /forbidden (or custom)
+ * // Custom redirect URL
+ * const routes: Routes = [
+ *   {
+ *     path: 'super-admin',
+ *     component: SuperAdminComponent,
+ *     canActivate: [authGuard, rbacGuard],
+ *     data: {
+ *       roles: ['super-admin'],
+ *       rbacRedirectUrl: '/access-denied',
+ *     },
+ *   },
+ * ];
+ *
+ * // No roles required (guard allows all authenticated users)
+ * const routes: Routes = [
+ *   {
+ *     path: 'profile',
+ *     component: ProfileComponent,
+ *     canActivate: [authGuard, rbacGuard],
+ *     // data.roles not set - allows all authenticated users
+ *   },
+ * ];
+ * ```
+ *
+ * @see UserService
+ * @see authGuard
+ * @see CanActivateFn
+ * @publicApi
  */
 export const rbacGuard: CanActivateFn = (
   route: ActivatedRouteSnapshot,
   _state: RouterStateSnapshot,
 ): UrlTree | boolean => {
-  // Inject the UserService (signal-based, store-backed)
+  // Inject the UserService to get current user's roles
   const userService: UserService = inject(UserService);
-  // Inject the Angular Router
+
+  // Inject the Angular Router for redirect navigation
   const router: Router = inject(Router);
 
   // Get the required roles from route data (defaults to empty array)
   const requiredRoles = (route.data?.['roles'] ?? []) as string[];
+
   // Get the current user's roles from the UserService
   const userRoles: string[] = userService.getUserRoles();
 
-  // Allow navigation if no roles are required or user has at least one required role
+  // Allow navigation if no roles are required OR user has at least one required role
   const hasAccess: boolean =
     requiredRoles.length === 0 ||
     requiredRoles.some((role: string): boolean => userRoles.includes(role));

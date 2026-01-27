@@ -1,5 +1,5 @@
 {
-  "name": "talent-hub-core",
+  "name": "@talent-hub/core",
   "version": "0.0.1",
   "peerDependencies": {
     "@angular/common": "21.0.8",

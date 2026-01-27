@@ -1,8 +1,11 @@
 /**
  * Copyright (c) 2026 Talent Hub. All rights reserved.
+ * This file is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written consent from Talent Hub.
  *
- * This software is proprietary and confidential.
- * Unauthorized reproduction or distribution is prohibited.
+ * @author Talent Hub Team
+ * @version 1.0.0
  */
 
 import { computed } from '@angular/core';
@@ -15,16 +18,21 @@ import { APP_CONSTANT } from '../../constants';
 import { Environment, LogLevel, Theme } from '../../enums';
 
 /**
- * The initial application state for AppStore.
+ * Initial application state for AppStore.
  *
- * Properties:
- * - isInitialized: Indicates if the app has completed initialization.
- * - isMaintenanceModeEnabled: If true, the app is in maintenance mode and should show a maintenance UI or restrict user actions.
- * - config: Application configuration (AppConfig) or null if not loaded.
- * - features: Feature flags for the application (Record<string, boolean> | null).
- * - preference: User preferences (theme, language, etc.) or null if not set.
- * - isLoading: Indicates if an async operation is in progress.
- * - error: Holds the current error object, if any.
+ * This object defines the default values for all state properties managed by the store.
+ * The state is reset to these values when the application first loads or when explicitly reset.
+ *
+ * @remarks
+ * - `isInitialized` - Indicates whether the app has completed its initialization sequence.
+ * - `isMaintenanceModeEnabled` - When `true`, the app displays a maintenance UI and restricts user actions.
+ * - `config` - Holds the application configuration (`AppConfig`) or `null` if not yet loaded.
+ * - `features` - Feature flags as a key-value map (`Record<string, boolean>`) or `null`.
+ * - `preference` - User preferences (theme, language) or `null` if not set.
+ * - `isLoading` - Indicates if an async operation is currently in progress.
+ * - `error` - Holds the current error object (if any) from failed operations.
+ *
+ * @internal
  */
 const initialState: AppState & AsyncState = {
   isInitialized: false,
@@ -39,79 +47,193 @@ const initialState: AppState & AsyncState = {
 /**
  * AppStore - Global signal-based state store for the Talent Hub application.
  *
- * This store manages application-wide configuration, user preferences, environment, logging,
- * feature toggles, and maintenance mode. It uses Angular signals and NgRx SignalStore for
- * reactive, type-safe state management. All state is kept immutable and updated via pure methods.
+ * This store manages application-wide configuration, user preferences, environment settings,
+ * logging configuration, feature toggles, and maintenance mode. It leverages Angular signals
+ * and NgRx SignalStore for reactive, type-safe, and immutable state management.
  *
- * Key responsibilities:
- * - Holds the root application state (AppState) and async state (AsyncState)
- * - Manages user preferences (theme, language) as a single source of truth
- * - Provides computed properties for UI (e.g., isDarkMode, isLightMode, maintenanceMode)
- * - Exposes methods to update state (initialize, setTheme, setLanguage, setMaintenanceMode, etc.)
- * - Supports feature toggling and version/build info for the host shell
- * - Handles optional logConfig in AppConfig gracefully throughout all state and method logic
+ * @remarks
+ * **Key Responsibilities:**
+ * - Holds the root application state (`AppState`) and async state (`AsyncState`).
+ * - Manages user preferences (theme, language) as a single source of truth.
+ * - Provides computed properties for UI bindings (e.g., `isDarkMode`, `isLightMode`, `currentTheme`).
+ * - Exposes methods to update state (`initialize`, `setTheme`, `setLanguage`, `setMaintenanceMode`, etc.).
+ * - Supports feature toggling via `isFeatureEnabled()` and `setFeatures()`.
+ * - Gracefully handles optional `logConfig` in `AppConfig` with safe defaults.
  *
- * Usage:
- *   const appStore = inject(AppStore);
- *   appStore.setTheme(Theme.Dark);
- *   appStore.setLanguage('de');
- *   if (appStore.isFeatureEnabled('Dashboard')) { ... }
- *   if (appStore.isMaintenanceModeEnabled()) { ... }
+ * **State Signals (Readable):**
+ * - `isInitialized()` - Whether the app has been initialized.
+ * - `isMaintenanceModeEnabled()` - Whether maintenance mode is active.
+ * - `config()` - The current `AppConfig` or `null`.
+ * - `features()` - The current feature flags or `null`.
+ * - `preference()` - The current `UserPreference` or `null`.
+ * - `isLoading()` - Whether an async operation is in progress.
+ * - `error()` - The current error object, if any.
  *
- * All updates are performed via signals and patchState, ensuring reactivity and
- * strict type safety. This store is intended to be used across all MFEs for
- * consistent application state and user experience.
+ * **Computed Signals:**
+ * - `isLightMode()` - `true` if user's theme is light.
+ * - `isDarkMode()` - `true` if user's theme is dark.
+ * - `currentTheme()` - The active theme (falls back to default).
+ * - `currentLanguage()` - The active language (falls back to default).
+ * - `currentEnvironment()` - The active environment (falls back to default).
+ * - `currentLogLevel()` - The active log level or `undefined`.
  *
- * Note: AppConfig.logConfig is optional. All computed properties and methods that access logConfig
- * use optional chaining and provide safe defaults where necessary.
+ * @example
+ * ```typescript
+ * // Inject the store in a component or service
+ * private readonly appStore = inject(AppStore);
+ *
+ * // Initialize the app with config and preferences
+ * this.appStore.initialize(appConfig, userPreference);
+ *
+ * // Check and toggle theme
+ * if (this.appStore.isDarkMode()) {
+ *   this.appStore.setTheme(Theme.Light);
+ * }
+ *
+ * // Check feature flags
+ * if (this.appStore.isFeatureEnabled('newDashboard')) {
+ *   this.loadNewDashboard();
+ * }
+ *
+ * // Enable maintenance mode
+ * this.appStore.setMaintenanceModeEnabled(true);
+ *
+ * // Use computed signals in templates
+ * // @if (appStore.isMaintenanceModeEnabled()) {
+ * //   <app-maintenance-page />
+ * // }
+ * ```
+ *
+ * @see AppState
+ * @see AppConfig
+ * @see UserPreference
+ * @see AsyncState
+ * @publicApi
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const AppStore: any = signalStore(
+export const AppStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // COMPUTED SIGNALS
+  // ─────────────────────────────────────────────────────────────────────────────
   withComputed(({ preference, config }) => ({
     /**
-     * isLightMode - Returns true if the user's theme is set to light mode.
-     * @returns {boolean} True if theme is Theme.Light, false otherwise.
+     * Computed signal that returns `true` if the user's theme is set to light mode.
+     *
+     * @returns `true` if `preference.theme === Theme.Light`, otherwise `false`.
+     *
+     * @example
+     * ```typescript
+     * if (appStore.isLightMode()) {
+     *   document.body.classList.add('light-theme');
+     * }
+     * ```
      */
     isLightMode: computed((): boolean => preference()?.theme === Theme.Light),
+
     /**
-     * isDarkMode - Returns true if the user's theme is set to dark mode.
-     * @returns {boolean} True if theme is Theme.Dark, false otherwise.
+     * Computed signal that returns `true` if the user's theme is set to dark mode.
+     *
+     * @returns `true` if `preference.theme === Theme.Dark`, otherwise `false`.
+     *
+     * @example
+     * ```typescript
+     * if (appStore.isDarkMode()) {
+     *   document.body.classList.add('dark-theme');
+     * }
+     * ```
      */
     isDarkMode: computed((): boolean => preference()?.theme === Theme.Dark),
+
     /**
-     * currentTheme - Returns the current theme (light/dark) for the user, falling back to default.
-     * @returns {Theme} The user's theme, or the default theme if not set.
+     * Computed signal that returns the current theme for the user.
+     *
+     * Falls back to `APP_CONSTANT.DEFAULT_THEME` if the preference is not set.
+     *
+     * @returns The user's theme (`Theme.Light` or `Theme.Dark`), or the default theme.
+     *
+     * @example
+     * ```typescript
+     * const theme = appStore.currentTheme();
+     * applyTheme(theme);
+     * ```
      */
     currentTheme: computed((): Theme => preference()?.theme ?? APP_CONSTANT.DEFAULT_THEME),
+
     /**
-     * currentLanguage - Returns the current language for the user, falling back to default.
-     * @returns {string} The user's language, or the default language if not set.
+     * Computed signal that returns the current language for the user.
+     *
+     * Falls back to `APP_CONSTANT.DEFAULT_LANGUAGE` if the preference is not set.
+     *
+     * @returns The user's language code (e.g., 'en', 'de', 'fr'), or the default language.
+     *
+     * @example
+     * ```typescript
+     * const lang = appStore.currentLanguage();
+     * translateService.use(lang);
+     * ```
      */
     currentLanguage: computed(
       (): string => preference()?.language ?? APP_CONSTANT.DEFAULT_LANGUAGE,
     ),
+
     /**
-     * currentEnvironment - Returns the current environment for the user, falling back to default.
-     * @returns {Environment} The current environment, or the default if not set.
+     * Computed signal that returns the current environment from config.
+     *
+     * Falls back to `APP_CONSTANT.DEFAULT_ENVIRONMENT` if config is not set.
+     *
+     * @returns The current environment (`Environment.Development`, `Environment.Production`, etc.).
+     *
+     * @example
+     * ```typescript
+     * if (appStore.currentEnvironment() === Environment.Production) {
+     *   enableProductionOptimizations();
+     * }
+     * ```
      */
     currentEnvironment: computed(() => config()?.environment ?? APP_CONSTANT.DEFAULT_ENVIRONMENT),
+
     /**
-     * currentLogLevel - Returns the current log level from the config.
+     * Computed signal that returns the current log level from config.
      *
-     * If logConfig is not set in AppConfig, returns undefined.
-     * @returns {LogLevel | undefined} The current log level, or undefined if not set.
+     * Returns `undefined` if `logConfig` is not set in `AppConfig`.
+     *
+     * @returns The current log level (`LogLevel`), or `undefined` if not configured.
+     *
+     * @example
+     * ```typescript
+     * const level = appStore.currentLogLevel();
+     * if (level === LogLevel.Debug) {
+     *   enableVerboseLogging();
+     * }
+     * ```
      */
     currentLogLevel: computed(() => config()?.logConfig?.level),
   })),
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // METHODS
+  // ─────────────────────────────────────────────────────────────────────────────
   withMethods((store) => ({
     /**
-     * initialize - Initializes the application with config and user preference.
+     * Initializes the application with configuration and user preferences.
      *
-     * @param config The application configuration (AppConfig)
-     * @param preference The user preference object (UserPreference)
-     * @returns {void}
+     * This method should be called once during application bootstrap to set up
+     * the initial state. It sets `isInitialized` to `true` after applying the config
+     * and preferences.
+     *
+     * @param config - The application configuration object.
+     * @param preference - The user preference object (theme, language, etc.).
+     *
+     * @example
+     * ```typescript
+     * // In app initializer or bootstrap
+     * appStore.initialize(
+     *   { appName: 'Talent Hub', appVersion: '1.0.0', environment: Environment.Production },
+     *   { theme: Theme.Dark, language: 'en' }
+     * );
+     * ```
      */
     initialize(config: AppConfig, preference: UserPreference): void {
       patchState(store, {
@@ -120,86 +242,160 @@ export const AppStore: any = signalStore(
         isInitialized: true,
       });
     },
+
     /**
-     * getEnvironment - Returns the current environment value from config.
+     * Returns the current environment value from config.
      *
-     * @returns {Environment} The current environment (e.g., dev, prod)
+     * Falls back to `APP_CONSTANT.DEFAULT_ENVIRONMENT` if config is not set.
+     *
+     * @returns The current environment (e.g., `Environment.Development`, `Environment.Production`).
+     *
+     * @example
+     * ```typescript
+     * const env = appStore.getEnvironment();
+     * console.log(`Running in ${env} mode`);
+     * ```
      */
     getEnvironment(): Environment {
       return store.config()?.environment ?? APP_CONSTANT.DEFAULT_ENVIRONMENT;
     },
+
     /**
-     * setEnvironment - Sets the current environment in config.
+     * Sets the current environment in config.
      *
-     * @param environment The new environment value
-     * @returns {void}
+     * Does nothing if config is `null`. Use `setConfig()` first to initialize config.
+     *
+     * @param environment - The new environment value to set.
+     *
+     * @example
+     * ```typescript
+     * appStore.setEnvironment(Environment.Production);
+     * ```
      */
     setEnvironment(environment: Environment): void {
-      const config = store.config();
+      const config: AppConfig | null = store.config();
       if (!config) return;
       patchState(store, { config: { ...config, environment } });
     },
+
     /**
-     * getLogLevel - Returns the current log level value from config.logConfig.
+     * Returns the current log level from `config.logConfig`.
      *
-     * If logConfig is not set in AppConfig, returns undefined.
+     * Returns `undefined` if `logConfig` is not set in `AppConfig`.
      *
-     * @returns {LogLevel | undefined} The current log level
+     * @returns The current log level, or `undefined` if not configured.
+     *
+     * @example
+     * ```typescript
+     * const level = appStore.getLogLevel();
+     * if (level === LogLevel.Error) {
+     *   // Only log errors
+     * }
+     * ```
      */
     getLogLevel(): LogLevel | undefined {
       return store.config()?.logConfig?.level;
     },
+
     /**
-     * getConfig - Returns the current application configuration.
+     * Returns the current application configuration.
      *
-     * @returns {AppConfig | null} The current app config
+     * @returns The current `AppConfig` object, or `null` if not set.
+     *
+     * @example
+     * ```typescript
+     * const config = appStore.getConfig();
+     * console.log(`App: ${config?.appName} v${config?.appVersion}`);
+     * ```
      */
     getConfig(): AppConfig | null {
       return store.config();
     },
+
     /**
-     * getPreference - Returns the current user preference object.
+     * Returns the current user preference object.
      *
-     * @returns {UserPreference | null} The current user preference
+     * @returns The current `UserPreference` object, or `null` if not set.
+     *
+     * @example
+     * ```typescript
+     * const pref = appStore.getPreference();
+     * console.log(`Theme: ${pref?.theme}, Language: ${pref?.language}`);
+     * ```
      */
     getPreference(): UserPreference | null {
       return store.preference();
     },
+
     /**
-     * getIsLoading - Returns true if an async operation is in progress.
+     * Returns `true` if an async operation is currently in progress.
      *
-     * @returns {boolean | undefined} True if loading, otherwise false/undefined
+     * @returns `true` if loading, otherwise `false` or `undefined`.
+     *
+     * @example
+     * ```typescript
+     * if (appStore.getIsLoading()) {
+     *   showSpinner();
+     * }
+     * ```
      */
     getIsLoading(): boolean | undefined {
       return store.isLoading?.();
     },
+
     /**
-     * getError - Returns the current error object, if any.
+     * Returns the current error object, if any.
      *
-     * @returns {unknown} The current error object
+     * @returns The current error object (`Error`, `string`, or `unknown`), or `undefined`.
+     *
+     * @example
+     * ```typescript
+     * const error = appStore.getError();
+     * if (error) {
+     *   showErrorToast(error);
+     * }
+     * ```
      */
     getError(): unknown {
       return store.error?.();
     },
+
     /**
-     * setMaintenanceModeEnabled - Enables or disables maintenance mode for the application.
+     * Enables or disables maintenance mode for the application.
      *
-     * @param enabled True to enable maintenance mode, false to disable
-     * @returns {void}
+     * When maintenance mode is enabled, the application should display a maintenance
+     * page and restrict normal user interactions.
+     *
+     * @param enabled - `true` to enable maintenance mode, `false` to disable.
+     *
+     * @example
+     * ```typescript
+     * // Enable maintenance mode
+     * appStore.setMaintenanceModeEnabled(true);
+     *
+     * // Disable maintenance mode
+     * appStore.setMaintenanceModeEnabled(false);
+     * ```
      */
     setMaintenanceModeEnabled(enabled: boolean): void {
       patchState(store, { isMaintenanceModeEnabled: enabled });
     },
+
     /**
-     * setLogLevel - Sets the current log level in config.logConfig.
+     * Sets the current log level in `config.logConfig`.
      *
-     * If logConfig is not set, it will be initialized with default values except for level.
+     * If `logConfig` is not set, it will be initialized with `logToServer: false`.
+     * Does nothing if config is `null`.
      *
-     * @param logLevel The new log level
-     * @returns {void}
+     * @param logLevel - The new log level to set.
+     *
+     * @example
+     * ```typescript
+     * appStore.setLogLevel(LogLevel.Debug);
+     * ```
      */
     setLogLevel(logLevel: LogLevel): void {
-      const config = store.config();
+      const config: AppConfig | null = store.config();
       if (!config) return;
       // If logConfig is missing, initialize with logToServer: false
       const prev = config.logConfig ?? { logToServer: false };
@@ -207,29 +403,55 @@ export const AppStore: any = signalStore(
         config: { ...config, logConfig: { ...prev, level: logLevel } },
       });
     },
+
     /**
-     * setConfig - Sets the application configuration.
+     * Sets the application configuration.
      *
-     * @param config The new application config
-     * @returns {void}
+     * Pass `null` to reset the configuration to its initial state.
+     *
+     * @param config - The new application config, or `null` to reset.
+     *
+     * @example
+     * ```typescript
+     * appStore.setConfig({
+     *   appName: 'Talent Hub',
+     *   appVersion: '2.0.0',
+     *   environment: Environment.Production,
+     *   logConfig: { level: LogLevel.Warn, logToServer: true },
+     * });
+     * ```
      */
-    setConfig(config: AppConfig): void {
+    setConfig(config: AppConfig | null): void {
       patchState(store, { config });
     },
+
     /**
-     * setPreference - Sets the user preference object.
+     * Sets the user preference object.
      *
-     * @param preference The new user preference
-     * @returns {void}
+     * Pass `null` to reset preferences to their initial state.
+     *
+     * @param preference - The new user preference, or `null` to reset.
+     *
+     * @example
+     * ```typescript
+     * appStore.setPreference({ theme: Theme.Dark, language: 'de' });
+     * ```
      */
-    setPreference(preference: UserPreference): void {
+    setPreference(preference: UserPreference | null): void {
       patchState(store, { preference });
     },
+
     /**
-     * setTheme - Sets the user's theme preference.
+     * Sets the user's theme preference.
      *
-     * @param theme The new theme (Theme.Light or Theme.Dark)
-     * @returns {void}
+     * Does nothing if preference is `null`. Use `setPreference()` first to initialize.
+     *
+     * @param theme - The new theme (`Theme.Light` or `Theme.Dark`).
+     *
+     * @example
+     * ```typescript
+     * appStore.setTheme(Theme.Dark);
+     * ```
      */
     setTheme(theme: Theme): void {
       const pref: UserPreference | null = store.preference();
@@ -241,9 +463,18 @@ export const AppStore: any = signalStore(
         },
       });
     },
+
     /**
-     * toggleTheme - Toggles the user's theme between light and dark.
-     * @returns {void}
+     * Toggles the user's theme between light and dark.
+     *
+     * If the current theme is light, it switches to dark, and vice versa.
+     * Does nothing if preference is `null`.
+     *
+     * @example
+     * ```typescript
+     * // Toggle theme on button click
+     * appStore.toggleTheme();
+     * ```
      */
     toggleTheme(): void {
       const pref: UserPreference | null = store.preference();
@@ -255,11 +486,18 @@ export const AppStore: any = signalStore(
         },
       });
     },
+
     /**
-     * setLanguage - Sets the user's language preference.
+     * Sets the user's language preference.
      *
-     * @param language The new language code (e.g., 'en', 'de')
-     * @returns {void}
+     * Does nothing if preference is `null`. Use `setPreference()` first to initialize.
+     *
+     * @param language - The new language code (e.g., 'en', 'de', 'fr').
+     *
+     * @example
+     * ```typescript
+     * appStore.setLanguage('de');
+     * ```
      */
     setLanguage(language: string): void {
       const pref: UserPreference | null = store.preference();
@@ -271,46 +509,102 @@ export const AppStore: any = signalStore(
         },
       });
     },
+
     /**
-     * isFeatureEnabled - Returns true if the given feature flag is enabled in AppState.features.
+     * Checks if a specific feature flag is enabled.
      *
-     * @param feature The feature flag key
-     * @returns {boolean} True if enabled, false otherwise
+     * Returns `false` if the features map is `null` or the feature key is not found.
+     *
+     * @param feature - The feature flag key to check.
+     * @returns `true` if the feature is enabled, `false` otherwise.
+     *
+     * @example
+     * ```typescript
+     * if (appStore.isFeatureEnabled('newDashboard')) {
+     *   loadNewDashboard();
+     * } else {
+     *   loadLegacyDashboard();
+     * }
+     * ```
      */
     isFeatureEnabled(feature: string): boolean {
       const features: Record<string, boolean> | null = store.features();
       return Boolean(features && features[feature]);
     },
+
     /**
-     * setFeatures - Sets the feature flags for the application.
+     * Sets the feature flags for the application.
      *
-     * @param features The new features object (Record<string, boolean> | null)
-     * @returns {void}
+     * Pass `null` to clear all feature flags.
+     *
+     * @param features - The new features map, or `null` to clear.
+     *
+     * @example
+     * ```typescript
+     * appStore.setFeatures({
+     *   newDashboard: true,
+     *   betaFeatures: false,
+     *   darkModeV2: true,
+     * });
+     * ```
      */
     setFeatures(features: Record<string, boolean> | null): void {
       patchState(store, { features });
     },
+
     /**
-     * setLoading - Sets the loading state for async operations.
+     * Sets the loading state for async operations.
      *
-     * @param isLoading True if loading, false otherwise
-     * @returns {void}
+     * Use this to indicate when the application is performing background operations
+     * such as fetching data or saving changes.
+     *
+     * @param isLoading - `true` if loading, `false` otherwise.
+     *
+     * @example
+     * ```typescript
+     * appStore.setLoading(true);
+     * try {
+     *   await fetchData();
+     * } finally {
+     *   appStore.setLoading(false);
+     * }
+     * ```
      */
     setLoading(isLoading: boolean): void {
       patchState(store, { isLoading });
     },
+
     /**
-     * setError - Sets the error state for async operations.
+     * Sets the error state for async operations.
      *
-     * @param error The error object (Error, string, or unknown)
-     * @returns {void}
+     * Use this to store error information when an operation fails.
+     * The error can be an `Error` object, a string message, or any unknown type.
+     *
+     * @param error - The error object, string, or unknown value.
+     *
+     * @example
+     * ```typescript
+     * try {
+     *   await saveData();
+     * } catch (err) {
+     *   appStore.setError(err);
+     * }
+     * ```
      */
     setError(error: Error | string | unknown): void {
       patchState(store, { error });
     },
+
     /**
-     * clearError - Clears the error state.
-     * @returns {void}
+     * Clears the error state.
+     *
+     * Call this method after handling or dismissing an error to reset the state.
+     *
+     * @example
+     * ```typescript
+     * // After user dismisses error dialog
+     * appStore.clearError();
+     * ```
      */
     clearError(): void {
       patchState(store, { error: undefined });

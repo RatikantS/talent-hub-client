@@ -1,11 +1,14 @@
 /**
  * Copyright (c) 2026 Talent Hub. All rights reserved.
+ * This file is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written consent from Talent Hub.
  *
- * This software is proprietary and confidential.
- * Unauthorized reproduction or distribution is prohibited.
+ * @author Talent Hub Team
+ * @version 1.0.0
  */
 
-import { inject } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 
 import { AuthStore } from '../store';
 import { User } from '../interfaces';
@@ -13,71 +16,148 @@ import { User } from '../interfaces';
 /**
  * AuthService - Provides authentication-related utilities and state selectors for guards and components.
  *
- * This service uses the global AuthStore (NgRx Signal Store) to expose authentication state and selectors.
- * It provides methods to check authentication, roles, permissions, and to retrieve the current user and token.
+ * This service acts as a facade over the global AuthStore (NgRx Signal Store), exposing
+ * authentication state, role checks, permission checks, and user/token retrieval methods.
+ * It is designed for use in guards, components, interceptors, and other services that
+ * require authentication logic.
  *
- * Usage:
- *   const auth = inject(AuthService);
- *   if (auth.isAuthenticated()) { ... }
- *   if (auth.hasRole('admin')) { ... }
- *   if (auth.hasPermission('read')) { ... }
- *   const token = auth.getToken();
- *   const user = auth.getUser();
+ * @remarks
+ * - Uses the `inject()` function for dependency injection (Angular 14+).
+ * - All methods delegate to the AuthStore for state access.
+ * - The service is provided in root and is a singleton across the application.
+ * - Designed to be used across all micro-frontends (MFEs) for consistent auth logic.
  *
- * - Uses signals for state (reactive, type-safe).
- * - Uses computed for derived state (if needed).
- * - Provided in root (singleton).
+ * @example
+ * ```typescript
+ * @Component({ ... })
+ * export class ProfileComponent {
+ *   private readonly auth = inject(AuthService);
+ *
+ *   ngOnInit() {
+ *     if (this.auth.isAuthenticated()) {
+ *       const user = this.auth.getUser();
+ *       console.log('Welcome', user?.firstName);
+ *     }
+ *     if (this.auth.hasRole('admin')) {
+ *       // Show admin controls
+ *     }
+ *     if (this.auth.hasPermission('edit')) {
+ *       // Enable edit button
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * @see AuthStore
+ * @see User
+ * @publicApi
  */
+@Injectable({ providedIn: 'root' })
 export class AuthService {
   /**
    * Reference to the global AuthStore (NgRx Signal Store).
-   * Used to access authentication state and selectors.
+   * Used to access authentication state, user info, roles, and permissions.
+   * @internal
    */
-  private readonly authStore: typeof AuthStore = inject(AuthStore);
+  private readonly authStore = inject(AuthStore);
 
   /**
-   * Returns true if the user is authenticated (reactive signal).
+   * Checks if the current user is authenticated.
    *
-   * @returns {boolean} True if authenticated, false otherwise.
+   * This method returns the current authentication state from the AuthStore.
+   * The value is reactive and reflects the latest state.
+   *
+   * @returns `true` if the user is authenticated, `false` otherwise.
+   *
+   * @example
+   * ```typescript
+   * if (authService.isAuthenticated()) {
+   *   // User is logged in
+   * }
+   * ```
    */
   isAuthenticated(): boolean {
-    // AuthStore exposes isAuthenticated as a signal property
     return this.authStore.isAuthenticated();
   }
 
   /**
-   * Returns true if the user has the given role.
+   * Checks if the current user has the specified role.
    *
-   * @param role The role to check (e.g., 'admin').
-   * @returns {boolean} True if the user has the role, false otherwise.
+   * Delegates to the AuthStore's `hasRole` method to check if the user's
+   * roles array includes the given role string.
+   *
+   * @param role - The role to check (e.g., 'admin', 'editor', 'viewer').
+   * @returns `true` if the user has the role, `false` otherwise.
+   *
+   * @example
+   * ```typescript
+   * if (authService.hasRole('admin')) {
+   *   // Show admin dashboard
+   * }
+   * ```
    */
   hasRole(role: string): boolean {
     return this.authStore.hasRole(role);
   }
 
   /**
-   * Returns true if the user has the given permission.
+   * Checks if the current user has the specified permission.
    *
-   * @param permission The permission to check (e.g., 'read').
-   * @returns {boolean} True if the user has the permission, false otherwise.
+   * Delegates to the AuthStore's `hasPermission` method to check if the user's
+   * permissions array includes the given permission string.
+   *
+   * @param permission - The permission to check (e.g., 'read', 'write', 'delete').
+   * @returns `true` if the user has the permission, `false` otherwise.
+   *
+   * @example
+   * ```typescript
+   * if (authService.hasPermission('delete')) {
+   *   // Enable delete button
+   * }
+   * ```
    */
   hasPermission(permission: string): boolean {
     return this.authStore.hasPermission(permission);
   }
 
   /**
-   * Returns the current user's token (if any).
+   * Retrieves the current user's authentication token.
    *
-   * @returns {string | null} The user's auth token, or null if not authenticated.
+   * Returns the JWT or session token stored in the AuthStore.
+   * Returns `null` if the user is not authenticated or no token is available.
+   *
+   * @returns The authentication token string, or `null` if not available.
+   *
+   * @example
+   * ```typescript
+   * const token = authService.getToken();
+   * if (token) {
+   *   headers.set('Authorization', `Bearer ${token}`);
+   * }
+   * ```
    */
   getToken(): string | null {
     return this.authStore.getToken();
   }
 
   /**
-   * Returns the current user object (if any).
+   * Retrieves the current authenticated user object.
    *
-   * @returns {User | null} The current user object, or null if not authenticated.
+   * Returns the full User object from the AuthStore, including id, email,
+   * firstName, lastName, roles, and permissions. Returns `null` if the user
+   * is not authenticated.
+   *
+   * @returns The current `User` object, or `null` if not authenticated.
+   *
+   * @example
+   * ```typescript
+   * const user = authService.getUser();
+   * if (user) {
+   *   console.log(`Hello, ${user.firstName} ${user.lastName}`);
+   * }
+   * ```
+   *
+   * @see User
    */
   getUser(): User | null {
     return this.authStore.user();
