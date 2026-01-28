@@ -11,6 +11,11 @@
 | [Interceptors](./docs/INTERCEPTORS.md) | HTTP request/response handling         |
 | [Stores](./docs/STORES.md)             | NgRx Signal state management           |
 | [Interfaces](./docs/INTERFACES.md)     | TypeScript interface definitions       |
+| [Enums](./docs/ENUMS.md)               | TypeScript enumeration types           |
+| [Constants](./docs/CONSTANTS.md)       | Application-wide constants             |
+| [Tokens](./docs/TOKENS.md)             | Dependency injection tokens            |
+| [Pipes](./docs/PIPES.md)               | Angular pipes for templates            |
+| [Utils](./docs/UTILS.md)               | Utility helper classes                 |
 | [Testing](./docs/TESTING.md)           | Testing guide with Vitest              |
 
 ## 📦 Installation
@@ -31,6 +36,11 @@ libs/talent-hub-core/
 │   ├── INTERCEPTORS.md
 │   ├── STORES.md
 │   ├── INTERFACES.md
+│   ├── ENUMS.md
+│   ├── CONSTANTS.md
+│   ├── TOKENS.md
+│   ├── PIPES.md
+│   ├── UTILS.md
 │   └── TESTING.md
 ├── src/
 │   ├── lib/
@@ -40,6 +50,7 @@ libs/talent-hub-core/
 │   │   ├── interceptors/    # HTTP interceptors
 │   │   ├── interfaces/      # TypeScript interfaces
 │   │   ├── models/          # Data models
+│   │   ├── pipes/           # Angular pipes
 │   │   ├── services/        # Angular services
 │   │   ├── store/           # NgRx Signal stores
 │   │   ├── tokens/          # Injection tokens
@@ -66,6 +77,7 @@ libs/talent-hub-core/
 | `@talent-hub/core/types`        | Type definitions         |
 | `@talent-hub/core/constants`    | Application constants    |
 | `@talent-hub/core/tokens`       | Injection tokens         |
+| `@talent-hub/core/pipes`        | Angular pipes            |
 | `@talent-hub/core/models`       | Data models              |
 | `@talent-hub/core/utils`        | Utility functions        |
 
@@ -82,6 +94,7 @@ libs/talent-hub-core/
 | `LoggerService`           | Structured logging with levels          |
 | `MaintenanceService`      | Maintenance mode detection              |
 | `StorageService`          | LocalStorage/SessionStorage abstraction |
+| `TranslateService`        | Internationalization (i18n) support     |
 | `UserService`             | User data and preferences management    |
 
 ### Usage Example
@@ -222,37 +235,77 @@ export class HeaderComponent {
 
 ## 🔑 Tokens
 
-| Token          | Description               |
-| -------------- | ------------------------- |
-| `API_BASE_URL` | Base URL for API requests |
+| Token              | Description               |
+| ------------------ | ------------------------- |
+| `API_BASE_URL`     | Base URL for API requests |
+| `TRANSLATE_CONFIG` | Translation configuration |
 
 ### Usage Example
 
 ```typescript
 // app.config.ts
-import { API_BASE_URL } from '@talent-hub/core/tokens';
+import { provideApiBaseUrl, provideTranslateConfig } from '@talent-hub/core/tokens';
 import { environment } from './environments/environment';
+import messagesEn from './i18n/en.json';
 
 export const appConfig: ApplicationConfig = {
-  providers: [{ provide: API_BASE_URL, useValue: environment.apiUrl }],
+  providers: [
+    provideApiBaseUrl(environment.apiUrl),
+    provideTranslateConfig({
+      defaultLocale: 'en',
+      translations: { en: { locale: 'en', translations: messagesEn } },
+    }),
+  ],
 };
+```
+
+## 🔤 Pipes
+
+| Pipe            | Description                             |
+| --------------- | --------------------------------------- |
+| `TranslatePipe` | Internationalization (i18n) translation |
+
+### Usage Example
+
+```typescript
+import { Component } from '@angular/core';
+import { TranslatePipe } from '@talent-hub/core/pipes';
+
+@Component({
+  imports: [TranslatePipe],
+  template: `
+    <h1>{{ 'nav.dashboard' | translate }}</h1>
+    <button>{{ 'actions.save' | translate }}</button>
+  `,
+})
+export class DashboardComponent {}
 ```
 
 ## 🛠️ Utilities
 
 | Utility        | Description                         |
 | -------------- | ----------------------------------- |
+| `ApiUtil`      | API URL manipulation utilities      |
 | `AppUtil`      | Application-level utility functions |
 | `PlatformUtil` | Platform detection utilities        |
 
 ### Usage Example
 
 ```typescript
-import { PlatformUtil } from '@talent-hub/core/utils';
+import { ApiUtil, PlatformUtil } from '@talent-hub/core/utils';
 
+// Build API URLs with path params
+const url = ApiUtil.replacePathParams('/users/{id}/posts', { id: 123 });
+// Result: '/users/123/posts'
+
+// Add query parameters
+const fullUrl = url + ApiUtil.buildQueryParams({ page: 1, limit: 10 });
+// Result: '/users/123/posts?page=1&limit=10'
+
+// Safe browser API access (SSR compatible)
 if (PlatformUtil.isBrowser()) {
-  // Browser-specific code
   window.addEventListener('online', handleOnline);
+  localStorage.setItem('key', 'value');
 }
 
 if (PlatformUtil.isMobile()) {

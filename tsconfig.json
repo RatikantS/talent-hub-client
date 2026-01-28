@@ -25,6 +25,7 @@
       "@talent-hub/core/tokens": ["./libs/talent-hub-core/src/lib/tokens/index.ts"],
       "@talent-hub/core/constants": ["./libs/talent-hub-core/src/lib/constants/index.ts"],
       "@talent-hub/core/types": ["./libs/talent-hub-core/src/lib/types/index.ts"],
+      "@talent-hub/core/pipes": ["./libs/talent-hub-core/src/lib/pipes/index.ts"],
       "@talent-hub/ui": ["./libs/talent-hub-ui/src/public-api.ts"],
       "@talent-hub/ui/components": ["./libs/talent-hub-ui/src/lib/components/index.ts"],
       "@talent-hub/ui/directives": ["./libs/talent-hub-ui/src/lib/directives/index.ts"],

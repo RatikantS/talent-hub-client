@@ -98,6 +98,27 @@ npm run build:all
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
+## Shared Libraries
+
+| Library                                    | Description                                   |
+| ------------------------------------------ | --------------------------------------------- |
+| [@talent-hub/core](./libs/talent-hub-core) | Services, guards, interceptors, stores, utils |
+| [@talent-hub/ui](./libs/talent-hub-ui)     | Reusable UI components, directives, and pipes |
+
+### Import Examples
+
+```typescript
+// Core library imports
+import { AuthService, LoggerService } from '@talent-hub/core/services';
+import { authGuard, rbacGuard } from '@talent-hub/core/guards';
+import { AuthStore, AppStore } from '@talent-hub/core/store';
+import { User, AppConfig } from '@talent-hub/core/interfaces';
+import { Environment, Theme, LogLevel } from '@talent-hub/core/enums';
+
+// UI library imports
+import { ButtonComponent, CardComponent } from '@talent-hub/ui';
+```
+
 ## Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner:
@@ -115,6 +136,13 @@ npm run test:assessment  # talent-hub-assessment
 npm run test:onboarding  # talent-hub-onboarding
 npm run test:audit       # talent-hub-audit
 npm run test:report      # talent-hub-report
+```
+
+### Test Shared Libraries
+
+```bash
+npm run test:core        # talent-hub-core library
+npm run test:ui          # talent-hub-ui library
 ```
 
 ### Test All Applications

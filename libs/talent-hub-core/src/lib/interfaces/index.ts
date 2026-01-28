@@ -16,10 +16,14 @@
  * ## Usage
  *
  * ```typescript
- * import { User, AppConfig, HttpOptions } from '@talent-hub/core/interfaces';
+ * import { User, AppConfig, HttpOptions, UrlParams } from '@talent-hub/core/interfaces';
  *
  * function loadUser(): User {
  *   return { id: '1', email: 'user@example.com', ... };
+ * }
+ *
+ * function buildApiUrl(params: UrlParams): string {
+ *   return ApiUtil.constructURL('/users/{id}', params);
  * }
  * ```
  *
@@ -32,6 +36,9 @@
  * | `EventBusMessage` | Inter-component messaging format |
  * | `HttpOptions` | HTTP request configuration |
  * | `LogConfig` | Logging configuration |
+ * | `TranslateConfig` | Translation service configuration |
+ * | `TranslationMessages` | Translation messages structure |
+ * | `UrlParams` | URL path and query parameter structure |
  * | `User` | User identity and authorization properties |
  * | `UserPreference` | User preference settings |
  *
@@ -53,6 +60,12 @@ export * from './http-options.interface';
 
 /** Logging configuration (levels, output format) */
 export * from './log-config.interface';
+
+/** Translation service configuration and messages structure */
+export * from './translate.interface';
+
+/** URL path and query parameter structures. */
+export * from './url-parameters.interface';
 
 /** User identity and authorization properties (id, email, roles, permissions) */
 export * from './user.interface';

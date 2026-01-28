@@ -61,6 +61,7 @@ src/
 
 - **[Directives Documentation](./docs/DIRECTIVES.md)** - Complete guide to all custom directives
 - **[Pipes Documentation](./docs/PIPES.md)** - Complete guide to all custom pipes
+- **[Testing Documentation](./docs/TESTING.md)** - Testing guide with Vitest
 
 ## Quick Start
 

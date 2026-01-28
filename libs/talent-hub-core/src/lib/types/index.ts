@@ -16,10 +16,14 @@
  * ## Usage
  *
  * ```typescript
- * import { EnvironmentType, ThemeType, StorageType } from '@talent-hub/core/types';
+ * import { EnvironmentType, ThemeType, QueryParams } from '@talent-hub/core/types';
  *
  * function setTheme(theme: ThemeType): void {
  *   document.body.dataset.theme = theme;
+ * }
+ *
+ * function buildApiUrl(params: QueryParams): string {
+ *   return ApiUtil.buildQueryParams(params);
  * }
  * ```
  *
@@ -29,6 +33,8 @@
  * |------|------------|-------------|
  * | `EnvironmentType` | `'development' \| 'staging' \| 'production'` | Environment string literals |
  * | `LogLevelType` | `'debug' \| 'info' \| 'warn' \| 'error'` | Log level string literals |
+ * | `QueryParamValue` | `string \| number \| boolean \| undefined \| null` | Single query parameter value |
+ * | `QueryParams` | `Record<string, QueryParamValue \| QueryParamValue[]>` | Query parameters object |
  * | `StorageType` | `'local' \| 'session'` | Storage mechanism types |
  * | `ThemeType` | `'light' \| 'dark' \| 'system'` | Theme string literals |
  *
@@ -36,14 +42,17 @@
  * @publicApi
  */
 
-/** Environment string literal types */
+/** Environment string literal types for deployment contexts */
 export * from './environment.type';
 
-/** Log level string literal types */
+/** Log level string literal types for logging configuration */
 export * from './log-level.type';
 
-/** Storage mechanism types (local, session) */
+/** Query parameters type definition */
+export * from './query-params.type';
+
+/** Storage mechanism types for StorageService (local, session) */
 export * from './storage.type';
 
-/** Theme string literal types */
+/** Theme string literal types for UI theming (light, dark, system) */
 export * from './theme.type';

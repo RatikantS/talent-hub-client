@@ -18,10 +18,30 @@ import { InjectionToken } from '@angular/core';
  * all relative HTTP request URLs, ensuring consistent API endpoint resolution.
  *
  * @example
+ * ```typescript
+ * // In app.config.ts
+ * import { provideApiBaseUrl } from '@talent-hub/core';
+ *
+ * export const appConfig: ApplicationConfig = {
  *   providers: [
- *     { provide: API_BASE_URL, useValue: 'https://api.example.com/' }
+ *     provideApiBaseUrl('https://api.example.com/')
  *   ]
+ * };
+ * ```
  *
  * @see ApiPrefixInterceptor
  */
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
+
+/**
+ * Provider function for the API base URL.
+ *
+ * @param url - The base URL string for all backend API requests
+ * @returns Provider for API_BASE_URL token
+ */
+export function provideApiBaseUrl(url: string) {
+  return {
+    provide: API_BASE_URL,
+    useValue: url,
+  };
+}

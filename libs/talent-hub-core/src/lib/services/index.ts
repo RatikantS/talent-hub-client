@@ -71,5 +71,8 @@ export * from './maintenance.service';
 /** LocalStorage/SessionStorage abstraction with type safety */
 export * from './storage.service';
 
+/** Internationalization and translation service */
+export * from './translate.service';
+
 /** User data and preferences management */
 export * from './user.service';

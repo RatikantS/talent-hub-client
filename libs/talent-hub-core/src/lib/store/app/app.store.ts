@@ -114,9 +114,7 @@ export const AppStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
 
-  // ─────────────────────────────────────────────────────────────────────────────
   // COMPUTED SIGNALS
-  // ─────────────────────────────────────────────────────────────────────────────
   withComputed(({ preference, config }) => ({
     /**
      * Computed signal that returns `true` if the user's theme is set to light mode.
@@ -212,9 +210,7 @@ export const AppStore = signalStore(
     currentLogLevel: computed(() => config()?.logConfig?.level),
   })),
 
-  // ─────────────────────────────────────────────────────────────────────────────
   // METHODS
-  // ─────────────────────────────────────────────────────────────────────────────
   withMethods((store) => ({
     /**
      * Initializes the application with configuration and user preferences.

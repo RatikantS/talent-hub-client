@@ -19,6 +19,7 @@ Services in `@talent-hub/core` are designed as singletons using `providedIn: 'ro
 | [LoggerService](#loggerservice)                     | Structured logging with levels          |
 | [MaintenanceService](#maintenanceservice)           | Maintenance mode detection              |
 | [StorageService](#storageservice)                   | LocalStorage/SessionStorage abstraction |
+| [TranslateService](#translateservice)               | Internationalization (i18n) support     |
 | [UserService](#userservice)                         | User data and preferences management    |
 
 ---
@@ -441,6 +442,114 @@ export class UserPreferenceService {
     return this.storage.get<T>(key, 'session');
   }
 }
+```
+
+---
+
+## TranslateService
+
+Provides internationalization (i18n) and translation management using a reactive approach.
+
+### Import
+
+```typescript
+import { TranslateService } from '@talent-hub/core/services';
+```
+
+### Properties & Methods
+
+| Member             | Type                     | Description               |
+| ------------------ | ------------------------ | ------------------------- |
+| `locale`           | `string`                 | Current locale code       |
+| `localeSignal`     | `Signal<string>`         | Reactive locale signal    |
+| `availableLocales` | `string[]`               | List of available locales |
+| `translate`        | `(key: string): string`  | Translate key to string   |
+| `setLocale`        | `(locale: string): void` | Change current locale     |
+
+### Setup
+
+Configure translations in your app.config.ts:
+
+```typescript
+import { provideTranslateConfig } from '@talent-hub/core/tokens';
+import messagesEn from './i18n/en.json';
+import messagesDe from './i18n/de.json';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideTranslateConfig({
+      defaultLocale: 'en',
+      translations: {
+        en: { locale: 'en', translations: messagesEn },
+        de: { locale: 'de', translations: messagesDe },
+      },
+    }),
+  ],
+};
+```
+
+### Usage
+
+```typescript
+import { TranslateService } from '@talent-hub/core/services';
+import { AppStore } from '@talent-hub/core/store';
+
+@Component({
+  template: `
+    <h1>{{ title() }}</h1>
+    <select (change)="changeLanguage($event)">
+      @for (locale of availableLocales; track locale) {
+        <option [value]="locale">{{ locale }}</option>
+      }
+    </select>
+  `,
+})
+export class HeaderComponent {
+  private translateService = inject(TranslateService);
+  private appStore = inject(AppStore);
+
+  // Using computed for reactive translations
+  title = computed(() => this.translateService.translate('nav.dashboard'));
+
+  availableLocales = this.translateService.availableLocales;
+
+  changeLanguage(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    // Use AppStore as the single source of truth for language
+    this.appStore.setLanguage(select.value);
+  }
+}
+```
+
+### Template Usage with TranslatePipe
+
+For template-based translations, use the `TranslatePipe`:
+
+```typescript
+import { TranslatePipe } from '@talent-hub/core/pipes';
+
+@Component({
+  imports: [TranslatePipe],
+  template: `
+    <h1>{{ 'nav.dashboard' | translate }}</h1>
+    <button>{{ 'actions.save' | translate }}</button>
+  `,
+})
+export class MyComponent {}
+```
+
+### Architecture
+
+The service uses `AppStore` as the single source of truth for the current language:
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────┐
+│  Component/Pipe │ ──▶ │ TranslateService │ ──▶ │  AppStore   │
+└─────────────────┘     └──────────────────┘     └─────────────┘
+       │                         │                      │
+       │ translate()             │ locale               │ currentLanguage()
+       │ setLocale()             │ setLocale()          │ setLanguage()
+       ▼                         ▼                      ▼
 ```
 
 ---

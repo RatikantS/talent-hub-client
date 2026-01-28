@@ -293,6 +293,7 @@ export * from './lib/store';
  *
  * Available tokens:
  * - `API_BASE_URL` - Base URL for API requests
+ * - `TRANSLATE_CONFIG` - Translation configuration with locales and messages
  *
  * @example
  * ```typescript
