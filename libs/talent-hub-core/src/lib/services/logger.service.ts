@@ -12,7 +12,7 @@ import { computed, inject, Injectable, Signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { AppStore } from '../store';
-import { LogLevel } from '../enums';
+import { LogLevel } from '../types';
 import { AppUtil } from '../utils';
 
 /**
@@ -23,7 +23,7 @@ import { AppUtil } from '../utils';
  * a backend server for centralized logging and monitoring.
  *
  * @remarks
- * - Supports six log levels via the `LogLevel` enum: Info, Warn, Error, Debug, Trace, Fatal.
+ * - Supports six log levels via the `LogLevel` type: Info, Warn, Error, Debug, Trace, Fatal.
  * - Console output uses the appropriate `console.*` method for each log level.
  * - Server-side logging is only enabled in production mode (`!AppUtil.isDevMode()`).
  * - The log endpoint is dynamically read from `AppStore.config.logConfig.logEndpoint`.
@@ -95,7 +95,7 @@ export class LoggerService {
    * 1. Logs to the browser console using the appropriate `console.*` method.
    * 2. Optionally sends the log to a backend server (production mode only).
    *
-   * @param level - The log level from the `LogLevel` enum (Info, Warn, Error, Debug, Trace, Fatal).
+   * @param level - The log level from the `LogLevel` type (Info, Warn, Error, Debug, Trace, Fatal).
    * @param message - The log message string describing the event.
    * @param meta - Optional metadata to include with the log (object, error, context, etc.).
    *
@@ -111,28 +111,28 @@ export class LoggerService {
    *
    * @example
    * ```typescript
-   * // Direct usage with LogLevel enum
-   * this.logger.log(LogLevel.Info, 'Application started', { version: '1.0.0' });
-   * this.logger.log(LogLevel.Error, 'Unhandled exception', { error: err });
+   * // Direct usage with LogLevel type
+   * this.logger.log('info', 'Application started', { version: '1.0.0' });
+   * this.logger.log('error', 'Unhandled exception', { error: err });
    * ```
    */
   log(level: LogLevel, message: string, meta?: unknown): void {
     // Log to browser console using the appropriate method for the level
     switch (level) {
-      case LogLevel.Info:
+      case 'info':
         console.info(message, meta);
         break;
-      case LogLevel.Warn:
+      case 'warn':
         console.warn(message, meta);
         break;
-      case LogLevel.Error:
-      case LogLevel.Fatal:
+      case 'error':
+      case 'fatal':
         console.error(message, meta);
         break;
-      case LogLevel.Debug:
+      case 'debug':
         console.debug(message, meta);
         break;
-      case LogLevel.Trace:
+      case 'trace':
         console.trace(message, meta);
         break;
     }
@@ -160,7 +160,7 @@ export class LoggerService {
    * ```
    */
   info(message: string, meta?: unknown): void {
-    this.log(LogLevel.Info, message, meta);
+    this.log('info', message, meta);
   }
 
   /**
@@ -178,7 +178,7 @@ export class LoggerService {
    * ```
    */
   warn(message: string, meta?: unknown): void {
-    this.log(LogLevel.Warn, message, meta);
+    this.log('warn', message, meta);
   }
 
   /**
@@ -196,7 +196,7 @@ export class LoggerService {
    * ```
    */
   error(message: string, meta?: unknown): void {
-    this.log(LogLevel.Error, message, meta);
+    this.log('error', message, meta);
   }
 
   /**
@@ -214,7 +214,7 @@ export class LoggerService {
    * ```
    */
   fatal(message: string, meta?: unknown): void {
-    this.log(LogLevel.Fatal, message, meta);
+    this.log('fatal', message, meta);
   }
 
   /**
@@ -233,7 +233,7 @@ export class LoggerService {
    * ```
    */
   debug(message: string, meta?: unknown): void {
-    this.log(LogLevel.Debug, message, meta);
+    this.log('debug', message, meta);
   }
 
   /**
@@ -255,6 +255,6 @@ export class LoggerService {
    * ```
    */
   trace(message: string, meta?: unknown): void {
-    this.log(LogLevel.Trace, message, meta);
+    this.log('trace', message, meta);
   }
 }

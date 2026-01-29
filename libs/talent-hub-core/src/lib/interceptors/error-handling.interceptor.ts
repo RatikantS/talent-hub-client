@@ -92,48 +92,19 @@ import { APP_CONSTANT } from '../constants';
 @Injectable({ providedIn: 'root' })
 export class ErrorHandlingInterceptor implements HttpInterceptor {
   /**
-   * Returns the LoggerService instance for error logging.
+   * The LoggerService instance for error logging.
    *
-   * The `LoggerService` is used to log error details for diagnostics and auditing.
-   * This method is protected to allow subclasses to override it for testing.
-   *
-   * @returns The `LoggerService` instance.
-   *
-   * @remarks
-   * Override this method in tests to provide a mock logger:
-   * ```typescript
-   * class MockErrorInterceptor extends ErrorHandlingInterceptor {
-   *   protected override getLogger(): LoggerService {
-   *     return mockLogger;
-   *   }
-   * }
-   * ```
+   * Injected from Angular's DI system to log error details for diagnostics and auditing.
    */
-  protected getLogger(): LoggerService {
-    return inject(LoggerService);
-  }
+  private readonly logger = inject(LoggerService);
 
   /**
-   * Returns the EventBusService instance for publishing error events.
+   * The EventBusService instance for publishing error events.
    *
-   * The `EventBusService` is used to broadcast error events across the application
-   * for centralized handling. This method is protected for testability.
-   *
-   * @returns The `EventBusService` instance.
-   *
-   * @remarks
-   * Override this method in tests to provide a mock event bus:
-   * ```typescript
-   * class MockErrorInterceptor extends ErrorHandlingInterceptor {
-   *   protected override getEventBus(): EventBusService {
-   *     return mockEventBus;
-   *   }
-   * }
-   * ```
+   * Injected from Angular's DI system to broadcast error events across the application
+   * for centralized handling.
    */
-  protected getEventBus(): EventBusService {
-    return inject(EventBusService);
-  }
+  private readonly eventBus = inject(EventBusService);
 
   /**
    * Intercepts HTTP requests and provides centralized error handling.
@@ -173,21 +144,18 @@ export class ErrorHandlingInterceptor implements HttpInterceptor {
    * ```
    */
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    const logger: LoggerService = this.getLogger();
-    const eventBus: EventBusService = this.getEventBus();
-
     return next.handle(req).pipe(
       catchError((error: unknown) => {
         if (error instanceof HttpErrorResponse) {
           // Log HTTP errors with detailed context
-          logger.error('HTTP Error:', {
+          this.logger.error('HTTP Error:', {
             status: error.status,
             message: error.message,
             error: error.error,
           });
 
           // Publish error event for global handling (notifications, redirects, etc.)
-          eventBus.publish(APP_CONSTANT.EVENT_BUS_KEYS.HTTP_ERROR, {
+          this.eventBus.publish(APP_CONSTANT.EVENT_BUS_KEYS.HTTP_ERROR, {
             status: error.status,
             message: error.message,
             error: error.error,
@@ -197,10 +165,10 @@ export class ErrorHandlingInterceptor implements HttpInterceptor {
           });
         } else {
           // Handle unexpected non-HTTP errors
-          logger.error('Unknown HTTP Error:', error);
+          this.logger.error('Unknown HTTP Error:', error);
 
           // Publish unknown error event
-          eventBus.publish(APP_CONSTANT.EVENT_BUS_KEYS.HTTP_UNKNOWN_ERROR, { error });
+          this.eventBus.publish(APP_CONSTANT.EVENT_BUS_KEYS.HTTP_UNKNOWN_ERROR, { error });
         }
 
         // Re-throw the error so it can be handled by calling code if needed

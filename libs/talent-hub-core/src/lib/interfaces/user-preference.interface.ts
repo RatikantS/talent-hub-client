@@ -8,107 +8,261 @@
  * @version 1.0.0
  */
 
-import { Theme } from '../enums';
+import { DateFormat, Theme, TimeFormat } from '../types';
+import { UserNotificationPreference } from '../interfaces';
 
 /**
- * Represents a user's preference settings in the Talent Hub application.
+ * User preference interface that supports multi-tenant architecture.
  *
- * This interface defines the user's active selections for language and theme.
- * These preferences are stored per user and used to personalize the application
- * experience across sessions, devices, and micro-frontends.
+ * This interface defines user-level preference settings that can be customized
+ * per user within a tenant, overriding tenant defaults.
  *
  * @remarks
+ * **Preference Resolution Order:**
+ * 1. User Preference (highest priority)
+ * 2. Tenant Preference (organization default)
+ * 3. System Default (lowest priority)
+ *
  * **Properties:**
- * - `language` - The user's preferred language code for localization.
- * - `theme` - The user's preferred UI theme (light/dark).
- *
- * **Usage:**
- * This interface is used by the `AppStore` to manage user preferences and is
- * typically persisted to local storage, user profile, or backend API.
- *
- * **Best Practices:**
- * - Validate that `language` matches one of the `supportedLanguages` in `AppConfig`.
- * - Ensure `theme` is a valid value from the `Theme` enum.
- * - Sync preferences across devices via user profile API when possible.
+ * - `userId` - The user this preference belongs to.
+ * - `tenantId` - The tenant context for this preference.
+ * - `language` - User's preferred language.
+ * - `theme` - User's preferred theme.
+ * - `dateFormat` - User's date format override.
+ * - `timeFormat` - User's time format override.
+ * - `timezone` - User's timezone override.
+ * - `notifications` - User's notification preferences.
  *
  * @example
  * ```typescript
- * // Create a user preference object
- * const preference: UserPreference = {
- *   language: 'en',
- *   theme: Theme.Dark,
+ * const userPref: UserPreference = {
+ *   userId: 'user_123',
+ *   tenantId: 'tenant_456',
+ *   language: 'de',
+ *   theme: 'dark',
+ *   timezone: 'Europe/Berlin',
+ *   notifications: {
+ *     email: true,
+ *     inApp: true,
+ *     push: false,
+ *   },
  * };
- *
- * // Initialize the AppStore with preferences
- * appStore.initialize(appConfig, preference);
- *
- * // Update theme
- * appStore.setTheme(Theme.Light);
- *
- * // Update language
- * appStore.setLanguage('de');
- *
- * // Access current preferences
- * const currentTheme = appStore.currentTheme();
- * const currentLang = appStore.currentLanguage();
  * ```
  *
- * @see AppStore
- * @see AppConfig
- * @see Theme
+ * @see TenantPreference
+ * @see PreferenceService
+ * @see AppPreference
  * @publicApi
  */
 export interface UserPreference {
   /**
-   * The user's preferred language code.
+   * The unique identifier for the user.
    *
-   * Used for localization and internationalization (i18n) throughout the application.
-   * Should be a valid ISO 639-1 language code (e.g., 'en', 'de', 'fr', 'es').
-   *
-   * @remarks
-   * - Should match one of the `supportedLanguages` in `AppConfig`.
-   * - Used by translation services to load the appropriate language pack.
-   * - Affects date/time formatting, number formatting, and UI text.
+   * Associates these preferences with a specific user.
+   * Should match the `User.id` value.
    *
    * @example
    * ```typescript
    * const pref: UserPreference = {
-   *   language: 'de', // German
-   *   theme: Theme.Light,
+   *   userId: 'user_123',
+   *   tenantId: 'tenant_456',
    * };
-   *
-   * // Apply language
-   * translateService.use(pref.language);
    * ```
    */
-  language: string;
+  userId: string;
 
   /**
-   * The user's preferred UI theme.
+   * The tenant context for this preference.
    *
-   * Used to personalize the application's visual appearance. Should be set to
-   * a valid value from the `Theme` enum (e.g., `Theme.Light`, `Theme.Dark`).
+   * A user may belong to multiple tenants and have different preferences
+   * for each tenant context. This field identifies which tenant context
+   * these preferences apply to.
    *
    * @remarks
-   * - Affects colors, backgrounds, and overall visual styling.
-   * - Respects user system preferences when auto-detection is enabled.
-   * - Persisted across sessions for consistent experience.
+   * - Preferences are scoped per tenant.
+   * - Switching tenants may load different user preferences.
+   *
+   * @example
+   * ```typescript
+   * // User has different preferences per tenant
+   * const acmePref: UserPreference = {
+   *   userId: 'user_123',
+   *   tenantId: 'acme_tenant',
+   *   language: 'en',
+   * };
+   *
+   * const europePref: UserPreference = {
+   *   userId: 'user_123',
+   *   tenantId: 'europe_tenant',
+   *   language: 'de',
+   * };
+   * ```
+   */
+  tenantId: string;
+
+  /**
+   * User's preferred language code.
+   *
+   * Overrides the tenant's default language for this user.
+   * Must be one of the tenant's `allowedLanguages`.
+   * If not set, uses the tenant's `defaultLanguage`.
+   *
+   * @remarks
+   * - ISO 639-1 language code (e.g., 'en', 'de', 'fr').
+   * - Used by `TranslateService` for UI localization.
+   * - Affects date/number formatting locale.
+   *
+   * @example
+   * ```typescript
+   * const pref: UserPreference = {
+   *   userId: 'user_123',
+   *   tenantId: 'tenant_456',
+   *   language: 'de', // Override tenant default
+   * };
+   * ```
+   */
+  language?: string;
+
+  /**
+   * User's preferred UI theme.
+   *
+   * Overrides the tenant's default theme for this user.
+   * If not set, uses the tenant's `defaultTheme`.
+   *
+   * @remarks
+   * - Common values: 'light', 'dark', 'system'.
+   * - 'system' follows the OS theme preference.
+   * - Applied via CSS classes or custom properties.
    *
    * @see Theme
    *
    * @example
    * ```typescript
    * const pref: UserPreference = {
-   *   language: 'en',
-   *   theme: Theme.Dark,
+   *   userId: 'user_123',
+   *   tenantId: 'tenant_456',
+   *   theme: 'dark',
    * };
-   *
-   * // Apply theme class to body
-   * document.body.classList.toggle('dark-theme', pref.theme === Theme.Dark);
-   *
-   * // Toggle theme
-   * appStore.toggleTheme();
    * ```
    */
-  theme: Theme;
+  theme?: Theme;
+
+  /**
+   * User's preferred date format.
+   *
+   * Overrides the tenant's default date format for this user.
+   * If not set, uses the tenant's `dateFormat`.
+   *
+   * @remarks
+   * Common formats from `DateFormat`:
+   * - `'MM/DD/YYYY'` - US format (01/31/2026)
+   * - `'DD/MM/YYYY'` - European format (31/01/2026)
+   * - `'YYYY-MM-DD'` - ISO format (2026-01-31)
+   *
+   * @see DateFormat
+   *
+   * @example
+   * ```typescript
+   * const pref: UserPreference = {
+   *   userId: 'user_123',
+   *   tenantId: 'tenant_456',
+   *   dateFormat: 'YYYY-MM-DD',
+   * };
+   * ```
+   */
+  dateFormat?: DateFormat;
+
+  /**
+   * User's preferred time format.
+   *
+   * Overrides the tenant's default time format for this user.
+   * If not set, uses the tenant's `timeFormat`.
+   *
+   * @remarks
+   * - `'12h'` - 12-hour format with AM/PM (e.g., 2:30 PM)
+   * - `'24h'` - 24-hour format (e.g., 14:30)
+   *
+   * @see TimeFormat
+   *
+   * @example
+   * ```typescript
+   * const pref: UserPreference = {
+   *   userId: 'user_123',
+   *   tenantId: 'tenant_456',
+   *   timeFormat: '24h',
+   * };
+   * ```
+   */
+  timeFormat?: TimeFormat;
+
+  /**
+   * User's preferred timezone.
+   *
+   * Overrides the tenant's default timezone for this user.
+   * If not set, uses the tenant's `timezone`.
+   * Must be a valid IANA timezone identifier.
+   *
+   * @remarks
+   * Examples of IANA timezone identifiers:
+   * - `'America/New_York'` - Eastern Time
+   * - `'Europe/London'` - British Time
+   * - `'Europe/Berlin'` - Central European Time
+   * - `'Asia/Tokyo'` - Japan Standard Time
+   *
+   * @example
+   * ```typescript
+   * const pref: UserPreference = {
+   *   userId: 'user_123',
+   *   tenantId: 'tenant_456',
+   *   timezone: 'Europe/Berlin',
+   * };
+   * ```
+   */
+  timezone?: string;
+
+  /**
+   * User's notification preferences.
+   *
+   * Overrides the tenant's default notification settings for this user.
+   * Supports partial overrides - only specified properties are overridden.
+   *
+   * @remarks
+   * - Includes email, in-app, and push notification settings.
+   * - Supports quiet hours and category-level preferences.
+   * - Unspecified properties inherit from tenant defaults.
+   *
+   * @see UserNotificationPreference
+   *
+   * @example
+   * ```typescript
+   * const pref: UserPreference = {
+   *   userId: 'user_123',
+   *   tenantId: 'tenant_456',
+   *   notifications: {
+   *     email: true,
+   *     push: false,
+   *     quietHours: {
+   *       enabled: true,
+   *       startTime: '22:00',
+   *       endTime: '08:00',
+   *     },
+   *   },
+   * };
+   * ```
+   */
+  notifications?: UserNotificationPreference;
+
+  /**
+   * Timestamp when these preferences were last updated.
+   *
+   * ISO 8601 formatted date string indicating the last modification time.
+   * Useful for cache invalidation and sync conflict resolution.
+   *
+   * @example
+   * ```typescript
+   * console.log(`Preferences last updated: ${pref.updatedAt}`);
+   * // Output: Preferences last updated: 2026-01-29T10:30:00.000Z
+   * ```
+   */
+  updatedAt?: string;
 }

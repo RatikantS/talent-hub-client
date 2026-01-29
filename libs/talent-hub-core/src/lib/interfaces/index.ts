@@ -32,15 +32,25 @@
  * | Interface | Description |
  * |-----------|-------------|
  * | `AppConfig` | Application configuration settings |
+ * | `AppPreference` | Application-level preference settings for AppStore |
  * | `CookieOptions` | Cookie storage options |
+ * | `EffectiveBranding` | Resolved tenant branding after applying defaults |
+ * | `EffectiveNotification` | Resolved notification settings after merging |
+ * | `EffectivePreference` | Final resolved preferences after all merges |
  * | `EventBusMessage` | Inter-component messaging format |
  * | `HttpOptions` | HTTP request configuration |
  * | `LogConfig` | Logging configuration |
+ * | `NotificationSettings` | Base notification settings (shared) |
+ * | `Tenant` | Tenant identity and configuration |
+ * | `TenantBranding` | Tenant branding configuration |
+ * | `TenantNotificationSettings` | Tenant notification defaults |
+ * | `TenantPreference` | Tenant-level preference settings |
  * | `TranslateConfig` | Translation service configuration |
  * | `TranslationMessages` | Translation messages structure |
  * | `UrlParams` | URL path and query parameter structure |
  * | `User` | User identity and authorization properties |
- * | `UserPreference` | User preference settings |
+ * | `UserNotificationPreference` | User notification preferences |
+ * | `UserPreference` | User preference settings for multi-tenant architecture |
  *
  * @module interfaces
  * @publicApi
@@ -70,5 +80,33 @@ export * from './url-parameters.interface';
 /** User identity and authorization properties (id, email, roles, permissions) */
 export * from './user.interface';
 
-/** User preference settings (theme, language, notifications) */
+/** Application-level preference settings (theme, language) for AppStore */
+export * from './app-preference.interface';
+
+/** User preference settings for multi-tenant architecture */
 export * from './user-preference.interface';
+
+/** User notification preference settings */
+export * from './user-notification-preference.interface';
+
+/** Base notification settings (shared between tenant and user) */
+export * from './notification-settings.interface';
+
+/** Tenant identity and configuration properties */
+export * from './tenant.interface';
+
+/** Tenant branding configuration (logo, favicon, app title) */
+export * from './tenant-branding.interface';
+
+/** Tenant notification settings (email, in-app, push, digest frequency) */
+export * from './tenant-notification-settings.interface';
+
+/** Tenant-level preference settings (organization defaults) */
+export * from './tenant-preference.interface';
+
+/** Resolved preferences after merging system, tenant, and user preferences */
+export * from './effective-preference.interface';
+
+export * from './effective-notification.interface';
+
+export * from './effective-branding.interface';

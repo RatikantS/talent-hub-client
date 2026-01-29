@@ -76,30 +76,12 @@ import { API_BASE_URL } from '../tokens';
 @Injectable({ providedIn: 'root' })
 export class ApiPrefixInterceptor implements HttpInterceptor {
   /**
-   * Returns the base URL for all API requests.
+   * The base URL for all API requests.
    *
-   * The base URL is injected from the `API_BASE_URL` token, which should be
-   * provided in the application's root configuration.
-   *
-   * @remarks
-   * This method is `protected` to allow subclasses to override it for testing
-   * or to provide environment-specific base URLs.
-   *
-   * @returns The API base URL string (e.g., `'https://api.example.com/v1'`).
-   *
-   * @example
-   * ```typescript
-   * // Override in a test or subclass
-   * class MockApiPrefixInterceptor extends ApiPrefixInterceptor {
-   *   protected override getBaseUrl(): string {
-   *     return 'http://localhost:3000';
-   *   }
-   * }
-   * ```
+   * Injected from the `API_BASE_URL` token, which should be provided
+   * in the application's root configuration.
    */
-  protected getBaseUrl(): string {
-    return inject(API_BASE_URL);
-  }
+  private readonly baseUrl = inject(API_BASE_URL);
 
   /**
    * Intercepts HTTP requests and prefixes relative URLs with the API base URL.
@@ -130,15 +112,13 @@ export class ApiPrefixInterceptor implements HttpInterceptor {
    * ```
    */
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    const baseUrl = this.getBaseUrl();
-
     // If the URL is already absolute (http, https, or protocol-relative), do not prefix.
     if (/^(https?:)?\/\//.test(req.url)) {
       return next.handle(req);
     }
 
     // Remove trailing slash from baseUrl and leading slash from req.url to avoid double slashes.
-    const url: string = baseUrl.replace(/\/$/, '') + '/' + req.url.replace(/^\//, '');
+    const url: string = this.baseUrl.replace(/\/$/, '') + '/' + req.url.replace(/^\//, '');
 
     // Clone the request with the new URL.
     const apiReq: HttpRequest<unknown> = req.clone({ url });

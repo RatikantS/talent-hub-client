@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import { AppConfig, UserPreference } from '../../interfaces';
+import { AppConfig, AppPreference } from '../../interfaces';
 
 /**
  * Represents the global application state for the Talent Hub platform.
@@ -50,7 +50,7 @@ import { AppConfig, UserPreference } from '../../interfaces';
  *
  * @see AppStore
  * @see AppConfig
- * @see UserPreference
+ * @see AppPreference
  * @publicApi
  */
 export interface AppState {
@@ -154,7 +154,7 @@ export interface AppState {
    * Set via `AppStore.setPreference()` or `AppStore.initialize()`. Returns `null`
    * if preferences have not been set yet.
    *
-   * @see UserPreference
+   * @see AppPreference
    *
    * @example
    * ```typescript
@@ -168,5 +168,5 @@ export interface AppState {
    * appStore.setPreference({ theme: Theme.Dark, language: 'de' });
    * ```
    */
-  preference: UserPreference | null;
+  preference: AppPreference | null;
 }

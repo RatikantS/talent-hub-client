@@ -68,27 +68,12 @@ import { AuthService } from '../services';
 @Injectable({ providedIn: 'root' })
 export class AuthInterceptor implements HttpInterceptor {
   /**
-   * Returns the AuthService instance for retrieving authentication tokens.
+   * The AuthService instance for retrieving authentication tokens.
    *
-   * The `AuthService` provides the current user's authentication token via
-   * `getToken()`. This method is protected to allow subclasses to override
-   * it for testing or custom authentication sources.
-   *
-   * @returns The `AuthService` instance.
-   *
-   * @remarks
-   * Override this method in tests to provide a mock `AuthService`:
-   * ```typescript
-   * class MockAuthInterceptor extends AuthInterceptor {
-   *   protected override getAuthService(): AuthService {
-   *     return mockAuthService;
-   *   }
-   * }
-   * ```
+   * Injected from Angular's DI system to provide the current user's
+   * authentication token via `getToken()`.
    */
-  protected getAuthService(): AuthService {
-    return inject(AuthService);
-  }
+  private readonly authService = inject(AuthService);
 
   /**
    * Intercepts HTTP requests and adds the Authorization header if a token is available.
@@ -118,11 +103,8 @@ export class AuthInterceptor implements HttpInterceptor {
    * ```
    */
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    // Use the overridable method to get the AuthService instance.
-    const authService: AuthService = this.getAuthService();
-
     // Retrieve the authentication token from the AuthService.
-    const token: string | null = authService.getToken();
+    const token: string | null = this.authService.getToken();
 
     // If no token is present or the Authorization header already exists, forward the request unchanged.
     if (!token || req.headers.has('Authorization')) {

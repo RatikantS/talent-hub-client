@@ -76,3 +76,6 @@ export * from './translate.service';
 
 /** User data and preferences management */
 export * from './user.service';
+
+/** Multi-tenant preference resolution service */
+export * from './preference.service';

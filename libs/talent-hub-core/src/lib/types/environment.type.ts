@@ -28,11 +28,6 @@
  * | `'staging'` | Standard | Limited | Staging API |
  * | `'production'` | Minimal | Disabled | Production API |
  *
- * **Relationship to Environment Enum:**
- * This type mirrors the `Environment` enum values as string literals.
- * Use the `Environment` enum for code clarity and `EnvironmentType` for
- * serialization or external API compatibility.
- *
  * **Usage:**
  * Use this type for:
  * - Function parameters that accept environment values.
@@ -42,10 +37,10 @@
  * @example
  * ```typescript
  * // Type-safe environment variable
- * const env: EnvironmentType = 'production';
+ * const env: Environment = 'production';
  *
  * // Environment-specific logic
- * function getApiUrl(environment: EnvironmentType): string {
+ * function getApiUrl(environment: Environment): string {
  *   switch (environment) {
  *     case 'development':
  *       return 'http://localhost:3000/api';
@@ -61,14 +56,13 @@
  *
  * // Configuration object
  * const config = {
- *   environment: 'staging' as EnvironmentType,
+ *   environment: 'staging' as Environment,
  *   apiUrl: getApiUrl('staging'),
  * };
  * ```
  *
- * @see Environment
  * @see AppConfig
  * @see AppStore
  * @publicApi
  */
-export type EnvironmentType = 'development' | 'staging' | 'production';
+export type Environment = 'development' | 'staging' | 'production';

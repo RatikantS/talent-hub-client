@@ -35,10 +35,10 @@
  * @example
  * ```typescript
  * // Type-safe theme variable
- * const theme: ThemeType = 'dark';
+ * const theme: Theme = 'dark';
  *
  * // Function accepting theme parameter
- * function applyTheme(theme: ThemeType): void {
+ * function applyTheme(theme: Theme): void {
  *   document.documentElement.setAttribute('data-theme', theme);
  * }
  *
@@ -54,11 +54,11 @@
  * localStorage.setItem('theme', theme);
  *
  * // Retrieve and validate theme
- * const stored = localStorage.getItem('theme') as ThemeType | null;
+ * const stored = localStorage.getItem('theme') as Theme | null;
  * ```
  *
  * @see Theme
  * @see UserPreference
  * @publicApi
  */
-export type ThemeType = 'light' | 'dark' | 'system';
+export type Theme = 'light' | 'dark' | 'system';

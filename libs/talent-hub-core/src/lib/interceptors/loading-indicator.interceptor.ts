@@ -85,26 +85,11 @@ import { LoadingIndicatorService } from '../services';
 @Injectable({ providedIn: 'root' })
 export class LoadingIndicatorInterceptor implements HttpInterceptor {
   /**
-   * Returns the LoadingIndicatorService instance for loader control.
+   * The LoadingIndicatorService instance for loader control.
    *
-   * The `LoadingIndicatorService` manages the global loading state via signals.
-   * This method is protected to allow subclasses to override it for testing.
-   *
-   * @returns The `LoadingIndicatorService` instance.
-   *
-   * @remarks
-   * Override this method in tests to provide a mock service:
-   * ```typescript
-   * class MockLoadingInterceptor extends LoadingIndicatorInterceptor {
-   *   protected override getLoadingIndicatorService(): LoadingIndicatorService {
-   *     return mockLoadingService;
-   *   }
-   * }
-   * ```
+   * Injected from Angular's DI system to manage the global loading state via signals.
    */
-  protected getLoadingIndicatorService(): LoadingIndicatorService {
-    return inject(LoadingIndicatorService);
-  }
+  private readonly loadingIndicatorService = inject(LoadingIndicatorService);
 
   /**
    * Intercepts HTTP requests to show/hide the global loading indicator.
@@ -137,12 +122,10 @@ export class LoadingIndicatorInterceptor implements HttpInterceptor {
    * ```
    */
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    const loadingIndicatorService: LoadingIndicatorService = this.getLoadingIndicatorService();
-
     // Show the loading indicator before the request starts
-    loadingIndicatorService.show();
+    this.loadingIndicatorService.show();
 
     // Forward the request and hide the loader when complete (success or error)
-    return next.handle(req).pipe(finalize((): void => loadingIndicatorService.hide()));
+    return next.handle(req).pipe(finalize((): void => this.loadingIndicatorService.hide()));
   }
 }

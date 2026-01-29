@@ -39,6 +39,13 @@
  * |-------|-------|-------------|
  * | `AuthStore` | User, tokens, login status | Authentication state management |
  * | `AppStore` | Theme, language, loading | Application-wide state management |
+ * | `TenantStore` | Tenant, preferences, features | Multi-tenant state management |
+ *
+ * ## Available Interfaces
+ *
+ * | Interface | Description |
+ * |-----------|-------------|
+ * | `TenantState` | Tenant state interface (currentTenant, tenantPreference, availableTenants) |
  *
  * @module store
  * @publicApi
@@ -49,3 +56,9 @@ export * from './auth/auth.store';
 
 /** Application state store - manages theme, language, and global loading state */
 export * from './app/app.store';
+
+/** Tenant state store - manages tenant context and preferences */
+export * from './tenant/tenant.store';
+
+/** Tenant state interface - defines the shape of tenant state */
+export * from './tenant/tenant-state.interface';

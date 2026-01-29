@@ -11,11 +11,11 @@
 import { computed } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 
-import { AppConfig, UserPreference } from '../../interfaces';
+import { AppConfig, AppPreference } from '../../interfaces';
 import { AppState } from './app-state.interface';
 import { AsyncState } from '../async-state.interface';
 import { APP_CONSTANT } from '../../constants';
-import { Environment, LogLevel, Theme } from '../../enums';
+import { Environment, LogLevel, Theme } from '../../types';
 
 /**
  * Initial application state for AppStore.
@@ -28,7 +28,7 @@ import { Environment, LogLevel, Theme } from '../../enums';
  * - `isMaintenanceModeEnabled` - When `true`, the app displays a maintenance UI and restricts user actions.
  * - `config` - Holds the application configuration (`AppConfig`) or `null` if not yet loaded.
  * - `features` - Feature flags as a key-value map (`Record<string, boolean>`) or `null`.
- * - `preference` - User preferences (theme, language) or `null` if not set.
+ * - `preference` - User preferences (ThemeType, language) or `null` if not set.
  * - `isLoading` - Indicates if an async operation is currently in progress.
  * - `error` - Holds the current error object (if any) from failed operations.
  *
@@ -47,14 +47,14 @@ const initialState: AppState & AsyncState = {
 /**
  * AppStore - Global signal-based state store for the Talent Hub application.
  *
- * This store manages application-wide configuration, user preferences, environment settings,
+ * This store manages application-wide configuration, user preferences, EnvironmentType settings,
  * logging configuration, feature toggles, and maintenance mode. It leverages Angular signals
  * and NgRx SignalStore for reactive, type-safe, and immutable state management.
  *
  * @remarks
  * **Key Responsibilities:**
  * - Holds the root application state (`AppState`) and async state (`AsyncState`).
- * - Manages user preferences (theme, language) as a single source of truth.
+ * - Manages user preferences (ThemeType, language) as a single source of truth.
  * - Provides computed properties for UI bindings (e.g., `isDarkMode`, `isLightMode`, `currentTheme`).
  * - Exposes methods to update state (`initialize`, `setTheme`, `setLanguage`, `setMaintenanceMode`, etc.).
  * - Supports feature toggling via `isFeatureEnabled()` and `setFeatures()`.
@@ -65,16 +65,16 @@ const initialState: AppState & AsyncState = {
  * - `isMaintenanceModeEnabled()` - Whether maintenance mode is active.
  * - `config()` - The current `AppConfig` or `null`.
  * - `features()` - The current feature flags or `null`.
- * - `preference()` - The current `UserPreference` or `null`.
+ * - `preference()` - The current `AppPreference` or `null`.
  * - `isLoading()` - Whether an async operation is in progress.
  * - `error()` - The current error object, if any.
  *
  * **Computed Signals:**
- * - `isLightMode()` - `true` if user's theme is light.
- * - `isDarkMode()` - `true` if user's theme is dark.
- * - `currentTheme()` - The active theme (falls back to default).
+ * - `isLightMode()` - `true` if user's ThemeType is light.
+ * - `isDarkMode()` - `true` if user's ThemeType is dark.
+ * - `currentTheme()` - The active ThemeType (falls back to default).
  * - `currentLanguage()` - The active language (falls back to default).
- * - `currentEnvironment()` - The active environment (falls back to default).
+ * - `currentEnvironment()` - The active EnvironmentType (falls back to default).
  * - `currentLogLevel()` - The active log level or `undefined`.
  *
  * @example
@@ -85,9 +85,9 @@ const initialState: AppState & AsyncState = {
  * // Initialize the app with config and preferences
  * this.appStore.initialize(appConfig, userPreference);
  *
- * // Check and toggle theme
+ * // Check and toggle ThemeType
  * if (this.appStore.isDarkMode()) {
- *   this.appStore.setTheme(Theme.Light);
+ *   this.appStore.setTheme('light');
  * }
  *
  * // Check feature flags
@@ -106,7 +106,7 @@ const initialState: AppState & AsyncState = {
  *
  * @see AppState
  * @see AppConfig
- * @see UserPreference
+ * @see AppPreference
  * @see AsyncState
  * @publicApi
  */
@@ -114,12 +114,11 @@ export const AppStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
 
-  // COMPUTED SIGNALS
   withComputed(({ preference, config }) => ({
     /**
      * Computed signal that returns `true` if the user's theme is set to light mode.
      *
-     * @returns `true` if `preference.theme === Theme.Light`, otherwise `false`.
+     * @returns `true` if `preference.theme === 'light'`, otherwise `false`.
      *
      * @example
      * ```typescript
@@ -128,12 +127,12 @@ export const AppStore = signalStore(
      * }
      * ```
      */
-    isLightMode: computed((): boolean => preference()?.theme === Theme.Light),
+    isLightMode: computed((): boolean => preference()?.theme === 'light'),
 
     /**
      * Computed signal that returns `true` if the user's theme is set to dark mode.
      *
-     * @returns `true` if `preference.theme === Theme.Dark`, otherwise `false`.
+     * @returns `true` if `preference.theme === 'dark'`, otherwise `false`.
      *
      * @example
      * ```typescript
@@ -142,14 +141,14 @@ export const AppStore = signalStore(
      * }
      * ```
      */
-    isDarkMode: computed((): boolean => preference()?.theme === Theme.Dark),
+    isDarkMode: computed((): boolean => preference()?.theme === 'dark'),
 
     /**
      * Computed signal that returns the current theme for the user.
      *
      * Falls back to `APP_CONSTANT.DEFAULT_THEME` if the preference is not set.
      *
-     * @returns The user's theme (`Theme.Light` or `Theme.Dark`), or the default theme.
+     * @returns The user's theme (`'light'` or `'dark'`), or the default theme.
      *
      * @example
      * ```typescript
@@ -181,28 +180,30 @@ export const AppStore = signalStore(
      *
      * Falls back to `APP_CONSTANT.DEFAULT_ENVIRONMENT` if config is not set.
      *
-     * @returns The current environment (`Environment.Development`, `Environment.Production`, etc.).
+     * @returns The current environment (`'development'`, `'production'`, etc.).
      *
      * @example
      * ```typescript
-     * if (appStore.currentEnvironment() === Environment.Production) {
+     * if (appStore.currentEnvironment() === 'production') {
      *   enableProductionOptimizations();
      * }
      * ```
      */
-    currentEnvironment: computed(() => config()?.environment ?? APP_CONSTANT.DEFAULT_ENVIRONMENT),
+    currentEnvironment: computed(
+      (): Environment => config()?.environment ?? APP_CONSTANT.DEFAULT_ENVIRONMENT,
+    ),
 
     /**
      * Computed signal that returns the current log level from config.
      *
      * Returns `undefined` if `logConfig` is not set in `AppConfig`.
      *
-     * @returns The current log level (`LogLevel`), or `undefined` if not configured.
+     * @returns The current log level (`LogLevelType`), or `undefined` if not configured.
      *
      * @example
      * ```typescript
      * const level = appStore.currentLogLevel();
-     * if (level === LogLevel.Debug) {
+     * if (level === 'debug') {
      *   enableVerboseLogging();
      * }
      * ```
@@ -210,7 +211,6 @@ export const AppStore = signalStore(
     currentLogLevel: computed(() => config()?.logConfig?.level),
   })),
 
-  // METHODS
   withMethods((store) => ({
     /**
      * Initializes the application with configuration and user preferences.
@@ -220,18 +220,18 @@ export const AppStore = signalStore(
      * and preferences.
      *
      * @param config - The application configuration object.
-     * @param preference - The user preference object (theme, language, etc.).
+     * @param preference - The user preference object (ThemeType, language, etc.).
      *
      * @example
      * ```typescript
      * // In app initializer or bootstrap
      * appStore.initialize(
-     *   { appName: 'Talent Hub', appVersion: '1.0.0', environment: Environment.Production },
-     *   { theme: Theme.Dark, language: 'en' }
+     *   { appName: 'Talent Hub', appVersion: '1.0.0', EnvironmentType: 'production' },
+     *   { ThemeType: 'dark', language: 'en' }
      * );
      * ```
      */
-    initialize(config: AppConfig, preference: UserPreference): void {
+    initialize(config: AppConfig, preference: AppPreference): void {
       patchState(store, {
         config,
         preference,
@@ -244,7 +244,7 @@ export const AppStore = signalStore(
      *
      * Falls back to `APP_CONSTANT.DEFAULT_ENVIRONMENT` if config is not set.
      *
-     * @returns The current environment (e.g., `Environment.Development`, `Environment.Production`).
+     * @returns The current environment (e.g., `'development'`, `'production'`).
      *
      * @example
      * ```typescript
@@ -265,7 +265,7 @@ export const AppStore = signalStore(
      *
      * @example
      * ```typescript
-     * appStore.setEnvironment(Environment.Production);
+     * appStore.setEnvironment('production');
      * ```
      */
     setEnvironment(environment: Environment): void {
@@ -284,7 +284,7 @@ export const AppStore = signalStore(
      * @example
      * ```typescript
      * const level = appStore.getLogLevel();
-     * if (level === LogLevel.Error) {
+     * if (level === 'error') {
      *   // Only log errors
      * }
      * ```
@@ -311,15 +311,15 @@ export const AppStore = signalStore(
     /**
      * Returns the current user preference object.
      *
-     * @returns The current `UserPreference` object, or `null` if not set.
+     * @returns The current `AppPreference` object, or `null` if not set.
      *
      * @example
      * ```typescript
      * const pref = appStore.getPreference();
-     * console.log(`Theme: ${pref?.theme}, Language: ${pref?.language}`);
+     * console.log(`ThemeType: ${pref?.ThemeType}, Language: ${pref?.language}`);
      * ```
      */
-    getPreference(): UserPreference | null {
+    getPreference(): AppPreference | null {
       return store.preference();
     },
 
@@ -387,7 +387,7 @@ export const AppStore = signalStore(
      *
      * @example
      * ```typescript
-     * appStore.setLogLevel(LogLevel.Debug);
+     * appStore.setLogLevel('debug');
      * ```
      */
     setLogLevel(logLevel: LogLevel): void {
@@ -412,8 +412,8 @@ export const AppStore = signalStore(
      * appStore.setConfig({
      *   appName: 'Talent Hub',
      *   appVersion: '2.0.0',
-     *   environment: Environment.Production,
-     *   logConfig: { level: LogLevel.Warn, logToServer: true },
+     *   EnvironmentType: 'production',
+     *   logConfig: { level: 'warn', logToServer: true },
      * });
      * ```
      */
@@ -430,10 +430,10 @@ export const AppStore = signalStore(
      *
      * @example
      * ```typescript
-     * appStore.setPreference({ theme: Theme.Dark, language: 'de' });
+     * appStore.setPreference({ ThemeType: 'dark', language: 'de' });
      * ```
      */
-    setPreference(preference: UserPreference | null): void {
+    setPreference(preference: AppPreference | null): void {
       patchState(store, { preference });
     },
 
@@ -442,15 +442,15 @@ export const AppStore = signalStore(
      *
      * Does nothing if preference is `null`. Use `setPreference()` first to initialize.
      *
-     * @param theme - The new theme (`Theme.Light` or `Theme.Dark`).
+     * @param theme - The new theme (`'light'` or `'dark'`).
      *
      * @example
      * ```typescript
-     * appStore.setTheme(Theme.Dark);
+     * appStore.setTheme('dark');
      * ```
      */
     setTheme(theme: Theme): void {
-      const pref: UserPreference | null = store.preference();
+      const pref: AppPreference | null = store.preference();
       if (!pref) return;
       patchState(store, {
         preference: {
@@ -473,12 +473,12 @@ export const AppStore = signalStore(
      * ```
      */
     toggleTheme(): void {
-      const pref: UserPreference | null = store.preference();
+      const pref: AppPreference | null = store.preference();
       if (!pref) return;
       patchState(store, {
         preference: {
           ...pref,
-          theme: pref.theme === Theme.Light ? Theme.Dark : Theme.Light,
+          theme: pref.theme === 'light' ? 'dark' : 'light',
         },
       });
     },
@@ -496,7 +496,7 @@ export const AppStore = signalStore(
      * ```
      */
     setLanguage(language: string): void {
-      const pref: UserPreference | null = store.preference();
+      const pref: AppPreference | null = store.preference();
       if (!pref) return;
       patchState(store, {
         preference: {

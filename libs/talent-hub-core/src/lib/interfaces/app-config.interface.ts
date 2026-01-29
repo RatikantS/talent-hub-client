@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import { Environment } from '../enums';
+import { Environment } from '../types';
 import { LogConfig } from '../interfaces';
 
 /**
@@ -43,10 +43,10 @@ import { LogConfig } from '../interfaces';
  *   appVersion: '2.1.0',
  *   buildNumber: '1234',
  *   buildTimestamp: '2026-01-27T10:30:00.000Z',
- *   environment: Environment.Production,
+ *   environment: 'production',
  *   supportedLanguages: ['en', 'de', 'fr'],
  *   logConfig: {
- *     level: LogLevel.Warn,
+ *     level: 'warn',
  *     logToServer: true,
  *     logEndpoint: '/api/logs',
  *   },
@@ -60,7 +60,7 @@ import { LogConfig } from '../interfaces';
  * ```
  *
  * @see AppStore
- * @see Environment
+ * @see EnvironmentType
  * @see LogConfig
  * @publicApi
  */
@@ -91,7 +91,7 @@ export interface AppConfig {
    * Used for display in about dialogs, diagnostics, API headers, and cache busting.
    *
    * @remarks
-   * - Typically set from `package.json` or build environment variables.
+   * - Typically set from `package.json` or build EnvironmentType variables.
    * - Increment MAJOR for breaking changes, MINOR for new features, PATCH for fixes.
    *
    * @example
@@ -184,25 +184,25 @@ export interface AppConfig {
    * The current deployment environment.
    *
    * Used to control environment-specific features, logging verbosity, API endpoints,
-   * and debug tools. Should be set to one of the values from the `Environment` enum.
+   * and debug tools. Should be set to one of the values: 'development', 'staging', or 'production'.
    *
    * @remarks
    * Common environments include:
-   * - `Environment.Development` - Local development with verbose logging.
-   * - `Environment.Staging` - Pre-production testing environment.
-   * - `Environment.Production` - Live production environment with minimal logging.
+   * - `'development'` - Local development with verbose logging.
+   * - `'staging'` - Pre-production testing environment.
+   * - `'production'` - Live production environment with minimal logging.
    *
-   * @see Environment
+   * @see EnvironmentType
    *
    * @example
    * ```typescript
    * const config: AppConfig = {
-   *   environment: Environment.Production,
+   *   environment: 'production',
    *   // ...other properties
    * };
    *
    * // Conditionally enable features
-   * if (config.environment === Environment.Development) {
+   * if (config.environment === 'development') {
    *   enableDevTools();
    * }
    * ```

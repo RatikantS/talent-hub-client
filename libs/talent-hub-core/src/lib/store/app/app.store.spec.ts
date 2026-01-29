@@ -12,8 +12,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { Injector, runInInjectionContext } from '@angular/core';
 
 import { AppStore } from './app.store';
-import { Environment, LogLevel, Theme } from '../../enums';
-import { AppConfig, UserPreference } from '../../interfaces';
+import { AppConfig, AppPreference } from '../../interfaces';
 
 describe('AppStore', () => {
   let store: InstanceType<typeof AppStore>;
@@ -26,10 +25,10 @@ describe('AppStore', () => {
     store.setConfig(null);
     store.setPreference(null);
     store.setMaintenanceModeEnabled(false);
-    store.setLogLevel(LogLevel.Info);
+    store.setLogLevel('info');
     store.setLoading(false);
     store.clearError();
-    store.setTheme(Theme.Light);
+    store.setTheme('light');
     store.setLanguage('en');
     store.setFeatures(null);
   });
@@ -42,9 +41,9 @@ describe('AppStore', () => {
     const config: AppConfig = {
       appName: 'Talent Hub',
       appVersion: '1.0.0',
-      environment: Environment.Development,
+      environment: 'development',
     };
-    const pref: UserPreference = { theme: Theme.Dark, language: 'fr' };
+    const pref: AppPreference = { theme: 'dark', language: 'fr' };
     store.initialize(config, pref);
     expect(store.getConfig()).toEqual(config);
     expect(store.getPreference()).toEqual(pref);
@@ -55,13 +54,13 @@ describe('AppStore', () => {
     const config: AppConfig = {
       appName: 'Talent Hub',
       appVersion: '1.0.0',
-      environment: Environment.Production,
-      logConfig: { level: LogLevel.Error, logToServer: false, logEndpoint: '/api/logs' },
+      environment: 'production',
+      logConfig: { level: 'error', logToServer: false, logEndpoint: '/api/logs' },
     };
-    const pref: UserPreference = { theme: Theme.Light, language: 'en' };
+    const pref: AppPreference = { theme: 'light', language: 'en' };
     store.initialize(config, pref);
-    expect(store.getEnvironment()).toBe(Environment.Production);
-    expect(store.getLogLevel()).toBe(LogLevel.Error);
+    expect(store.getEnvironment()).toBe('production');
+    expect(store.getLogLevel()).toBe('error');
     expect(store.isInitialized()).toBe(true);
   });
 
@@ -69,26 +68,26 @@ describe('AppStore', () => {
     const config: AppConfig = {
       appName: 'Talent Hub',
       appVersion: '1.0.0',
-      environment: Environment.Production,
+      environment: 'production',
     };
     store.setConfig(config);
-    expect(store.getEnvironment()).toBe(Environment.Production);
+    expect(store.getEnvironment()).toBe('production');
   });
 
   it('should set environment in config', () => {
     const config: AppConfig = {
       appName: 'Talent Hub',
       appVersion: '1.0.0',
-      environment: Environment.Production,
+      environment: 'production',
     };
     store.setConfig(config);
-    store.setEnvironment(Environment.Development);
-    expect(store.getEnvironment()).toBe(Environment.Development);
+    store.setEnvironment('development');
+    expect(store.getEnvironment()).toBe('development');
   });
 
   it('should not update environment if config is null', () => {
     store.setConfig(null);
-    expect(() => store.setEnvironment(Environment.Production)).not.toThrow();
+    expect(() => store.setEnvironment('production')).not.toThrow();
     expect(store.getEnvironment()).toBeDefined(); // Should fallback to default
   });
 
@@ -96,32 +95,32 @@ describe('AppStore', () => {
     const config: AppConfig = {
       appName: 'Talent Hub',
       appVersion: '1.0.0',
-      environment: Environment.Development,
-      logConfig: { level: LogLevel.Info, logToServer: false, logEndpoint: '/api/logs' },
+      environment: 'development',
+      logConfig: { level: 'info', logToServer: false, logEndpoint: '/api/logs' },
     };
     store.setConfig(config);
-    expect(store.getLogLevel()).toBe(LogLevel.Info);
+    expect(store.getLogLevel()).toBe('info');
   });
 
   it('should set log level in config.logConfig', () => {
     const config: AppConfig = {
       appName: 'Talent Hub',
       appVersion: '1.0.0',
-      environment: Environment.Development,
-      logConfig: { level: LogLevel.Info, logToServer: false, logEndpoint: '/api/logs' },
+      environment: 'development',
+      logConfig: { level: 'info', logToServer: false, logEndpoint: '/api/logs' },
     };
     store.setConfig(config);
-    store.setLogLevel(LogLevel.Error);
-    expect(store.getLogLevel()).toBe(LogLevel.Error);
-    store.setLogLevel(LogLevel.Info);
-    expect(store.getLogLevel()).toBe(LogLevel.Info);
+    store.setLogLevel('error');
+    expect(store.getLogLevel()).toBe('error');
+    store.setLogLevel('info');
+    expect(store.getLogLevel()).toBe('info');
   });
 
   it('should get log level as undefined if logConfig is missing', () => {
     const config: AppConfig = {
       appName: 'Talent Hub',
       appVersion: '1.0.0',
-      environment: Environment.Development,
+      environment: 'development',
     };
     store.setConfig(config);
     expect(store.getLogLevel()).toBeUndefined();
@@ -129,7 +128,7 @@ describe('AppStore', () => {
 
   it('should not update log level if config is null', () => {
     store.setConfig(null);
-    expect(() => store.setLogLevel(LogLevel.Error)).not.toThrow();
+    expect(() => store.setLogLevel('error')).not.toThrow();
     expect(store.getLogLevel()).toBeUndefined();
   });
 
@@ -137,26 +136,26 @@ describe('AppStore', () => {
     const config: AppConfig = {
       appName: 'Talent Hub',
       appVersion: '1.0.0',
-      environment: Environment.Development,
+      environment: 'development',
     };
     store.setConfig(config);
-    store.setLogLevel(LogLevel.Fatal);
-    expect(store.getLogLevel()).toBe(LogLevel.Fatal);
+    store.setLogLevel('fatal');
+    expect(store.getLogLevel()).toBe('fatal');
   });
 
   it('should set and get config', () => {
     const config: AppConfig = {
       appName: 'Talent Hub',
       appVersion: '1.0.0',
-      environment: Environment.Development,
+      environment: 'development',
     };
     store.setConfig(config);
     expect(store.getConfig()).toEqual(config);
   });
 
   it('should set and get user preference', () => {
-    const pref: UserPreference = {
-      theme: Theme.Dark,
+    const pref: AppPreference = {
+      theme: 'dark',
       language: 'de',
     };
     store.setPreference(pref);
@@ -201,24 +200,24 @@ describe('AppStore', () => {
 
   it('should handle setTheme/toggleTheme when preference is null', () => {
     store.setPreference(null);
-    store.setTheme(Theme.Dark); // should not throw
+    store.setTheme('dark'); // should not throw
     store.toggleTheme(); // should not throw
     expect(store.getPreference()).toBeNull();
   });
 
   it('should handle setTheme/toggleTheme when preference is not null', () => {
-    store.setPreference({ theme: Theme.Light, language: 'en' });
-    store.setTheme(Theme.Dark); // should not throw
+    store.setPreference({ theme: 'light', language: 'en' });
+    store.setTheme('dark'); // should not throw
     store.toggleTheme(); // should not throw
     expect(store.getPreference()).not.toBeNull();
   });
 
   it('should toggle theme', () => {
-    store.setPreference({ theme: Theme.Light, language: 'en' });
+    store.setPreference({ theme: 'light', language: 'en' });
     store.toggleTheme();
-    expect(store.currentTheme()).toBe(Theme.Dark);
+    expect(store.currentTheme()).toBe('dark');
     store.toggleTheme();
-    expect(store.currentTheme()).toBe(Theme.Light);
+    expect(store.currentTheme()).toBe('light');
   });
 
   it('should not update language if preference is null', () => {
@@ -228,7 +227,7 @@ describe('AppStore', () => {
   });
 
   it('should set and get language', () => {
-    store.setPreference({ theme: Theme.Light, language: 'en' });
+    store.setPreference({ theme: 'light', language: 'en' });
     store.setLanguage('fr');
     expect(store.currentLanguage()).toBe('fr');
   });
@@ -257,18 +256,18 @@ describe('AppStore', () => {
   });
 
   it('should return correct computed properties', () => {
-    store.setPreference({ theme: Theme.Light, language: 'en' });
+    store.setPreference({ theme: 'light', language: 'en' });
     expect(store.isLightMode()).toBe(true);
     expect(store.isDarkMode()).toBe(false);
-    expect(store.currentTheme()).toBe(Theme.Light);
+    expect(store.currentTheme()).toBe('light');
     expect(store.currentLanguage()).toBe('en');
   });
 
   it('should return correct theme and language values', () => {
-    store.setPreference({ theme: Theme.Dark, language: 'de' });
+    store.setPreference({ theme: 'dark', language: 'de' });
     expect(store.isDarkMode()).toBe(true);
     expect(store.isLightMode()).toBe(false);
-    expect(store.currentTheme()).toBe(Theme.Dark);
+    expect(store.currentTheme()).toBe('dark');
     expect(store.currentLanguage()).toBe('de');
   });
 
@@ -276,7 +275,7 @@ describe('AppStore', () => {
     store.setPreference(null);
     expect(store.isLightMode()).toBe(false);
     expect(store.isDarkMode()).toBe(false);
-    expect(store.currentTheme()).toBe(Theme.Light);
+    expect(store.currentTheme()).toBe('light');
     expect(store.currentLanguage()).toBe('en');
   });
 
@@ -284,33 +283,33 @@ describe('AppStore', () => {
     const config: AppConfig = {
       appName: 'Talent Hub',
       appVersion: '1.0.0',
-      environment: Environment.Production,
+      environment: 'production',
     };
     store.setConfig(config);
-    expect(store.currentEnvironment()).toBe(Environment.Production);
+    expect(store.currentEnvironment()).toBe('production');
   });
 
   it('should return default environment if config is null', () => {
     store.setConfig(null);
-    expect(store.currentEnvironment()).toBe(Environment.Development); // Assuming DEFAULT_ENVIRONMENT is Development
+    expect(store.currentEnvironment()).toBe('development'); // Assuming DEFAULT_ENVIRONMENT is Development
   });
 
   it('should return currentLogLevel from config.logConfig', () => {
     const config: AppConfig = {
       appName: 'Talent Hub',
       appVersion: '1.0.0',
-      environment: Environment.Production,
-      logConfig: { level: LogLevel.Warn, logToServer: false },
+      environment: 'production',
+      logConfig: { level: 'warn', logToServer: false },
     };
     store.setConfig(config);
-    expect(store.currentLogLevel()).toBe(LogLevel.Warn);
+    expect(store.currentLogLevel()).toBe('warn');
   });
 
   it('should return undefined for currentLogLevel if logConfig is missing', () => {
     const config: AppConfig = {
       appName: 'Talent Hub',
       appVersion: '1.0.0',
-      environment: Environment.Production,
+      environment: 'production',
     };
     store.setConfig(config);
     expect(store.currentLogLevel()).toBeUndefined();

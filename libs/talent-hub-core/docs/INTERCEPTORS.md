@@ -4,7 +4,26 @@
 
 ## Overview
 
-Interceptors in `@talent-hub/core` are functional interceptors (Angular 15+) that process HTTP requests and responses. They handle cross-cutting concerns like authentication, error handling, caching, and loading states.
+Interceptors in `@talent-hub/core` are class-based interceptors that implement `HttpInterceptor`.
+They use Angular's `inject()` function at the class field level for dependency injection,
+following modern Angular patterns for cleaner, more concise code.
+
+### Implementation Pattern
+
+All interceptors follow this pattern:
+
+```typescript
+@Injectable({ providedIn: 'root' })
+export class MyInterceptor implements HttpInterceptor {
+  // Dependencies injected as private readonly properties
+  private readonly myService = inject(MyService);
+
+  intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    // Use this.myService directly
+    return next.handle(req);
+  }
+}
+```
 
 ## Available Interceptors
 
@@ -454,33 +473,76 @@ export const appConfig: ApplicationConfig = {
 
 ## Creating Custom Interceptors
 
-Follow this pattern to create custom interceptors:
+Follow this pattern to create custom interceptors using the class-based approach with `inject()`:
 
 ```typescript
-import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
+import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import { Observable, tap, catchError, throwError } from 'rxjs';
 
-export const customInterceptor: HttpInterceptorFn = (req, next) => {
-  const myService = inject(MyService);
+@Injectable({ providedIn: 'root' })
+export class CustomInterceptor implements HttpInterceptor {
+  // Inject dependencies as private readonly properties
+  private readonly myService = inject(MyService);
+  private readonly logger = inject(LoggerService);
 
-  // Modify request
-  const modifiedReq = req.clone({
-    headers: req.headers.set('X-Custom-Header', 'value'),
+  intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    // Modify request using injected service
+    const modifiedReq = req.clone({
+      headers: req.headers.set('X-Custom-Header', this.myService.getValue()),
+    });
+
+    // Pass to next handler and optionally modify response
+    return next.handle(modifiedReq).pipe(
+      tap((event) => {
+        if (event instanceof HttpResponse) {
+          this.logger.debug('Response received', event);
+        }
+      }),
+      catchError((error) => {
+        this.logger.error('Request failed', error);
+        return throwError(() => error);
+      }),
+    );
+  }
+}
+```
+
+## Testing Interceptors
+
+Test interceptors using Angular's `Injector` and `runInInjectionContext`:
+
+```typescript
+import { Injector, runInInjectionContext } from '@angular/core';
+import { HttpRequest } from '@angular/common/http';
+import { of } from 'rxjs';
+
+describe('CustomInterceptor', () => {
+  let interceptor: CustomInterceptor;
+  let mockService: { getValue: ReturnType<typeof vi.fn> };
+
+  function createInterceptor(): CustomInterceptor {
+    mockService = { getValue: vi.fn().mockReturnValue('test-value') };
+    const injector = Injector.create({
+      providers: [{ provide: MyService, useValue: mockService }],
+    });
+    return runInInjectionContext(injector, () => new CustomInterceptor());
+  }
+
+  beforeEach(() => {
+    interceptor = createInterceptor();
   });
 
-  // Pass to next handler and optionally modify response
-  return next(modifiedReq).pipe(
-    tap((event) => {
-      if (event instanceof HttpResponse) {
-        // Handle response
-      }
-    }),
-    catchError((error) => {
-      // Handle error
-      return throwError(() => error);
-    }),
-  );
-};
+  it('should add custom header', () => {
+    const next = { handle: vi.fn().mockReturnValue(of({})) };
+    const req = new HttpRequest('GET', '/api/data');
+
+    interceptor.intercept(req, next as any);
+
+    const calledReq = next.handle.mock.calls[0][0];
+    expect(calledReq.headers.get('X-Custom-Header')).toBe('test-value');
+  });
+});
 ```
 
 ## HttpContext Tokens
@@ -512,11 +574,13 @@ this.http.get('/health', {
 
 ## Best Practices
 
-1. **Order matters** - Place interceptors in the correct order
-2. **Use context tokens** - Allow requests to opt-out of interceptor behavior
-3. **Handle errors gracefully** - Don't break the chain on errors
-4. **Log appropriately** - Use LoggerService for debugging
-5. **Test thoroughly** - Test interceptors in isolation and integration
+1. **Use `inject()` at field level** - Declare dependencies as `private readonly` properties using `inject()`
+2. **Order matters** - Place interceptors in the correct order
+3. **Use context tokens** - Allow requests to opt-out of interceptor behavior
+4. **Handle errors gracefully** - Don't break the chain on errors
+5. **Log appropriately** - Use LoggerService for debugging
+6. **Test with injection context** - Use `Injector.create()` and `runInInjectionContext()` for testing
+7. **Keep interceptors focused** - Each interceptor should handle one concern
 
 ## Related Documentation
 

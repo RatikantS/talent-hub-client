@@ -106,9 +106,6 @@ export const AuthStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // COMPUTED SIGNALS
-  // ─────────────────────────────────────────────────────────────────────────────
   withComputed(({ token, user }) => ({
     /**
      * Computed signal that returns the authentication token for the current session.
@@ -225,9 +222,6 @@ export const AuthStore = signalStore(
     ),
   })),
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // METHODS
-  // ─────────────────────────────────────────────────────────────────────────────
   withMethods((store) => ({
     /**
      * Checks if the user has a specific role.

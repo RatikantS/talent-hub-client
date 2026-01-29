@@ -90,15 +90,20 @@ export class NotificationComponent implements OnInit, OnDestroy {
     // Subscribe to HTTP errors using standardized key
     this.eventBus.on(APP_CONSTANT.EVENT_BUS_KEYS.HTTP_ERROR)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(error => {
-        this.showErrorNotification(error);
+      .subscribe(meta => {
+        // meta.data contains { status, message, error, url, method }
+        if (meta.data?.status === 401) {
+          this.redirectToLogin();
+        } else {
+          this.showErrorNotification(meta.data);
+        }
       });
 
-    // Subscribe to theme changes
-    this.eventBus.on(APP_CONSTANT.EVENT_BUS_KEYS.THEME_CHANGED)
+    // Subscribe to unknown HTTP errors
+    this.eventBus.on(APP_CONSTANT.EVENT_BUS_KEYS.HTTP_UNKNOWN_ERROR)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(theme => {
-        this.applyTheme(theme);
+      .subscribe(meta => {
+        console.error('Unknown error:', meta.data?.error);
       });
   }
 
@@ -109,24 +114,24 @@ export class NotificationComponent implements OnInit, OnDestroy {
 }
 ```
 
-**Emitting events with standardized keys:**
+**Emitting events with standardized keys (typically in interceptors):**
 
 ```typescript
 import { Injectable, inject } from '@angular/core';
 import { APP_CONSTANT } from '@talent-hub/core/constants';
 import { EventBusService } from '@talent-hub/core/services';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Injectable({ providedIn: 'root' })
-export class ThemeService {
+export class ErrorHandlingInterceptor {
   private eventBus = inject(EventBusService);
 
-  setTheme(theme: Theme) {
-    // Apply theme...
-
-    // Emit event for other parts of the app
-    this.eventBus.emit({
-      name: APP_CONSTANT.EVENT_BUS_KEYS.THEME_CHANGED,
-      payload: { theme },
+  handleError(error: HttpErrorResponse) {
+    // Publish HTTP error event
+    this.eventBus.publish(APP_CONSTANT.EVENT_BUS_KEYS.HTTP_ERROR, {
+      status: error.status,
+      message: error.message,
+      url: error.url,
     });
   }
 }
@@ -208,8 +213,9 @@ export const APP_CONSTANT = {
 
 ## Related Documentation
 
-- [Enums](./ENUMS.md) - Environment, Theme, LogLevel enums
+- [Types](./TYPES.md) - Environment, Theme, LogLevel, DateFormat, TimeFormat types
 - [Services](./SERVICES.md) - EventBusService
 - [Stores](./STORES.md) - AppStore theme and language
+- [Interfaces](./INTERFACES.md) - AppConfig, UserPreference interfaces
 - [Testing](./TESTING.md) - Testing guide with Vitest
 ````

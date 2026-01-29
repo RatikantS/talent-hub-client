@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import { LogLevel } from '../enums';
+import { LogLevel } from '../types';
 
 /**
  * Configuration interface for application logging.
@@ -19,7 +19,7 @@ import { LogLevel } from '../enums';
  *
  * @remarks
  * **Properties:**
- * - `level` - Minimum severity level to log (see `LogLevel` enum).
+ * - `level` - Minimum severity level to log (see `LogLevelType` enum).
  * - `logToServer` - Whether to send logs to a remote server.
  * - `logEndpoint` - URL endpoint for server-side log collection.
  *
@@ -30,21 +30,21 @@ import { LogLevel } from '../enums';
  * - If `logEndpoint` is omitted, server logging is disabled even if `logToServer` is `true`.
  *
  * **Best Practices:**
- * - Use `LogLevel.Debug` or `LogLevel.Trace` in development for verbose output.
- * - Use `LogLevel.Warn` or `LogLevel.Error` in production to reduce noise.
+ * - Use `'debug'` or `'trace'` in development for verbose output.
+ * - Use `'warn'` or `'error'` in production to reduce noise.
  * - Enable `logToServer` in production for centralized log monitoring.
  *
  * @example
  * ```typescript
  * // Development configuration (verbose, local only)
  * const devLogConfig: LogConfig = {
- *   level: LogLevel.Debug,
+ *   level: 'debug',
  *   logToServer: false,
  * };
  *
  * // Production configuration (errors only, send to server)
  * const prodLogConfig: LogConfig = {
- *   level: LogLevel.Error,
+ *   level: 'error',
  *   logToServer: true,
  *   logEndpoint: '/api/logs',
  * };
@@ -58,7 +58,7 @@ import { LogLevel } from '../enums';
  * };
  * ```
  *
- * @see LogLevel
+ * @see LogLevelType
  * @see LoggerService
  * @see AppConfig
  * @publicApi
@@ -68,29 +68,29 @@ export interface LogConfig {
    * The minimum log level to record.
    *
    * Only logs at this level or higher severity will be processed. Logs below
-   * this level are ignored. Use `LogLevel` enum values to set this property.
+   * this level are ignored. Use `LogLevelType` enum values to set this property.
    *
    * @remarks
    * Log levels in order of severity (lowest to highest):
-   * - `LogLevel.Trace` - Most verbose, detailed tracing information.
-   * - `LogLevel.Debug` - Debugging information for developers.
-   * - `LogLevel.Info` - General informational messages.
-   * - `LogLevel.Warn` - Warning conditions that may require attention.
-   * - `LogLevel.Error` - Error conditions that should be investigated.
-   * - `LogLevel.Fatal` - Critical errors that may cause application failure.
+   * - `'trace'` - Most verbose, detailed tracing information.
+   * - `'debug'` - Debugging information for developers.
+   * - `'info'` - General informational messages.
+   * - `'warn'` - Warning conditions that may require attention.
+   * - `'error'` - Error conditions that should be investigated.
+   * - `'fatal'` - Critical errors that may cause application failure.
    *
-   * @see LogLevel
+   * @see LogLevelType
    *
    * @example
    * ```typescript
    * // Only log warnings and above
-   * { level: LogLevel.Warn }
+   * { level: 'warn' }
    *
    * // Log everything including debug messages
-   * { level: LogLevel.Debug }
+   * { level: 'debug' }
    *
    * // Only log errors and fatal messages
-   * { level: LogLevel.Error }
+   * { level: 'error' }
    * ```
    */
   level: LogLevel;

@@ -25,7 +25,6 @@
  * | `@talent-hub/core/interceptors` | HTTP interceptors                  |
  * | `@talent-hub/core/store`     | NgRx Signal stores                    |
  * | `@talent-hub/core/interfaces`| TypeScript interfaces                 |
- * | `@talent-hub/core/enums`     | Enumerations                          |
  * | `@talent-hub/core/types`     | Type definitions                      |
  * | `@talent-hub/core/constants` | Application constants                 |
  * | `@talent-hub/core/tokens`    | Injection tokens                      |
@@ -45,10 +44,10 @@
  * import { authInterceptor, errorHandlingInterceptor } from '@talent-hub/core/interceptors';
  *
  * // Stores
- * import { AuthStore, AppStore } from '@talent-hub/core/store';
+ * import { AuthStore, AppStore, TenantStore } from '@talent-hub/core/store';
  *
  * // Interfaces
- * import { User, AppConfig } from '@talent-hub/core/interfaces';
+ * import { User, AppConfig, Tenant, TenantPreference } from '@talent-hub/core/interfaces';
  *
  * // Or import from main entry point
  * import { AuthService, authGuard, User } from '@talent-hub/core';
@@ -76,22 +75,6 @@
 export * from './lib/constants';
 
 // =============================================================================
-// ENUMS
-// =============================================================================
-
-/**
- * Enumeration types for type-safe value sets.
- *
- * Available enums:
- * - `Environment` - Application environment types (development, staging, production)
- * - `LogLevel` - Logging severity levels (debug, info, warn, error)
- * - `Theme` - UI theme options (light, dark, system)
- *
- * @see {@link ./lib/enums} for enum definitions
- */
-export * from './lib/enums';
-
-// =============================================================================
 // INTERFACES
 // =============================================================================
 
@@ -106,6 +89,7 @@ export * from './lib/enums';
  * - `HttpOptions` - HTTP request configuration
  * - `LogConfig` - Logging configuration
  * - `UserPreference` - User preference settings
+ * - `AppPreference` - Application-level preference settings for AppStore
  *
  * @see {@link ./lib/interfaces} for interface definitions
  */
@@ -133,10 +117,10 @@ export * from './lib/models';
  * TypeScript type definitions and aliases.
  *
  * Available types:
- * - `EnvironmentType` - Environment string literal types
- * - `LogLevelType` - Log level string literal types
+ * - `Environment` - Environment string literal types
+ * - `LogLevel` - Log level string literal types
  * - `StorageType` - Storage mechanism types (local, session)
- * - `ThemeType` - Theme string literal types
+ * - `Theme` - Theme string literal types
  *
  * @see {@link ./lib/types} for type definitions
  */
@@ -265,18 +249,21 @@ export * from './lib/services';
  * Available stores:
  * - `AuthStore` - Authentication state (user, tokens, login status)
  * - `AppStore` - Application state (theme, language, loading)
+ * - `TenantStore` - Tenant state (current tenant, preferences, features)
  *
  * @example
  * ```typescript
- * import { AuthStore, AppStore } from '@talent-hub/core/store';
+ * import { AuthStore, AppStore, TenantStore } from '@talent-hub/core/store';
  *
  * @Component({...})
  * export class MyComponent {
  *   private authStore = inject(AuthStore);
  *   private appStore = inject(AppStore);
+ *   private tenantStore = inject(TenantStore);
  *
  *   user = this.authStore.user;
  *   isLoading = this.appStore.isLoading;
+ *   tenantName = this.tenantStore.tenantName;
  * }
  * ```
  *

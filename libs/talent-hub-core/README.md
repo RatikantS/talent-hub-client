@@ -187,15 +187,16 @@ export const appConfig: ApplicationConfig = {
 
 ## 📊 Stores (NgRx Signals)
 
-| Store       | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `AuthStore` | Authentication state (user, tokens, login status) |
-| `AppStore`  | Application state (theme, language, loading)      |
+| Store         | Description                                          |
+| ------------- | ---------------------------------------------------- |
+| `AuthStore`   | Authentication state (user, tokens, login status)    |
+| `AppStore`    | Application state (theme, language, loading)         |
+| `TenantStore` | Tenant state (current tenant, preferences, features) |
 
 ### Usage Example
 
 ```typescript
-import { AuthStore, AppStore } from '@talent-hub/core/store';
+import { AuthStore, AppStore, TenantStore } from '@talent-hub/core/store';
 
 @Component({
   template: `
@@ -205,25 +206,30 @@ import { AuthStore, AppStore } from '@talent-hub/core/store';
     @if (appStore.isLoading()) {
       <app-spinner />
     }
+    <img [src]="tenantStore.branding()?.logoUrl" [alt]="tenantStore.tenantName()" />
   `,
 })
 export class HeaderComponent {
   protected authStore = inject(AuthStore);
   protected appStore = inject(AppStore);
+  protected tenantStore = inject(TenantStore);
 }
 ```
 
 ## 📝 Interfaces
 
-| Interface         | Description                                |
-| ----------------- | ------------------------------------------ |
-| `User`            | User identity and authorization properties |
-| `AppConfig`       | Application configuration settings         |
-| `CookieOptions`   | Cookie storage options                     |
-| `EventBusMessage` | Inter-component messaging format           |
-| `HttpOptions`     | HTTP request configuration                 |
-| `LogConfig`       | Logging configuration                      |
-| `UserPreference`  | User preference settings                   |
+| Interface          | Description                                |
+| ------------------ | ------------------------------------------ |
+| `User`             | User identity and authorization properties |
+| `AppConfig`        | Application configuration settings         |
+| `CookieOptions`    | Cookie storage options                     |
+| `EventBusMessage`  | Inter-component messaging format           |
+| `HttpOptions`      | HTTP request configuration                 |
+| `LogConfig`        | Logging configuration                      |
+| `Tenant`           | Tenant identity and configuration          |
+| `TenantPreference` | Tenant-level preference settings           |
+| `TenantBranding`   | Tenant branding configuration              |
+| `UserPreference`   | User preference settings                   |
 
 ## 🏷️ Enums
 

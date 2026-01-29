@@ -8,10 +8,11 @@ Stores in `@talent-hub/core` use NgRx Signals for reactive state management. The
 
 ## Available Stores
 
-| Store                   | Description                                       |
-| ----------------------- | ------------------------------------------------- |
-| [AuthStore](#authstore) | Authentication state (user, tokens, login status) |
-| [AppStore](#appstore)   | Application state (theme, language, loading)      |
+| Store                       | Description                                          |
+| --------------------------- | ---------------------------------------------------- |
+| [AuthStore](#authstore)     | Authentication state (user, tokens, login status)    |
+| [AppStore](#appstore)       | Application state (theme, language, loading)         |
+| [TenantStore](#tenantstore) | Tenant state (current tenant, preferences, features) |
 
 ---
 
@@ -389,6 +390,147 @@ export class NotificationsComponent {
     this.appStore.removeNotification(id);
   }
 }
+```
+
+---
+
+## TenantStore
+
+Manages tenant context and preferences for multi-tenant applications.
+
+### Import
+
+```typescript
+import { TenantStore } from '@talent-hub/core/store';
+```
+
+### State Shape
+
+```typescript
+interface TenantState {
+  currentTenant: Tenant | null;
+  tenantPreference: TenantPreference | null;
+  availableTenants: Tenant[];
+  isInitialized: boolean;
+  isLoading: boolean;
+  error: Error | undefined;
+}
+```
+
+### Signals (Read-only)
+
+| Signal             | Type                               | Description                         |
+| ------------------ | ---------------------------------- | ----------------------------------- |
+| `currentTenant`    | `Signal<Tenant \| null>`           | Current active tenant               |
+| `tenantPreference` | `Signal<TenantPreference \| null>` | Tenant's preference settings        |
+| `availableTenants` | `Signal<Tenant[]>`                 | All tenants user can access         |
+| `isInitialized`    | `Signal<boolean>`                  | Whether tenant context is loaded    |
+| `isLoading`        | `Signal<boolean>`                  | Loading state for tenant operations |
+| `error`            | `Signal<Error \| undefined>`       | Current error, if any               |
+
+### Computed Signals
+
+| Signal               | Type                              | Description                       |
+| -------------------- | --------------------------------- | --------------------------------- |
+| `tenantId`           | `Signal<string \| null>`          | Current tenant's ID               |
+| `tenantName`         | `Signal<string>`                  | Current tenant's display name     |
+| `tenantSlug`         | `Signal<string>`                  | Current tenant's URL slug         |
+| `tenantPlan`         | `Signal<TenantPlan \| null>`      | Subscription plan level           |
+| `isTenantActive`     | `Signal<boolean>`                 | Whether tenant is active          |
+| `hasMultipleTenants` | `Signal<boolean>`                 | Whether user has multiple tenants |
+| `defaultLanguage`    | `Signal<string>`                  | Tenant's default language         |
+| `defaultTheme`       | `Signal<Theme \| null>`           | Tenant's default theme            |
+| `allowedLanguages`   | `Signal<string[]>`                | Languages available in tenant     |
+| `defaultDateFormat`  | `Signal<string>`                  | Tenant's default date format      |
+| `defaultTimeFormat`  | `Signal<TimeFormat>`              | Tenant's default time format      |
+| `defaultTimezone`    | `Signal<string>`                  | Tenant's default timezone         |
+| `branding`           | `Signal<TenantBranding \| null>`  | Tenant's branding configuration   |
+| `tenantFeatures`     | `Signal<Record<string, boolean>>` | Tenant's feature flags            |
+
+### Methods
+
+| Method                   | Signature                                                          | Description                 |
+| ------------------------ | ------------------------------------------------------------------ | --------------------------- |
+| `initialize`             | `initialize(tenant, preference, availableTenants?): void`          | Initialize tenant context   |
+| `setCurrentTenant`       | `setCurrentTenant(tenant: Tenant): void`                           | Set current tenant          |
+| `setTenantPreference`    | `setTenantPreference(preference: TenantPreference): void`          | Set tenant preference       |
+| `updateTenantPreference` | `updateTenantPreference(updates: Partial<TenantPreference>): void` | Update preference fields    |
+| `setAvailableTenants`    | `setAvailableTenants(tenants: Tenant[]): void`                     | Set available tenants list  |
+| `switchTenant`           | `switchTenant(tenantId: string): boolean`                          | Switch to different tenant  |
+| `isFeatureEnabled`       | `isFeatureEnabled(featureKey: string): boolean`                    | Check if feature is enabled |
+| `setLoading`             | `setLoading(isLoading: boolean): void`                             | Set loading state           |
+| `setError`               | `setError(error: Error \| undefined): void`                        | Set error state             |
+| `clearError`             | `clearError(): void`                                               | Clear error state           |
+| `reset`                  | `reset(): void`                                                    | Reset to initial state      |
+
+### Usage
+
+```typescript
+import { TenantStore } from '@talent-hub/core/store';
+
+@Component({
+  template: `
+    <header>
+      <img [src]="tenantStore.branding()?.logoUrl" alt="Logo" />
+      <h1>{{ tenantStore.tenantName() }}</h1>
+
+      @if (tenantStore.hasMultipleTenants()) {
+        <select (change)="switchTenant($event)">
+          @for (tenant of tenantStore.availableTenants(); track tenant.id) {
+            <option [value]="tenant.id" [selected]="tenant.id === tenantStore.tenantId()">
+              {{ tenant.name }}
+            </option>
+          }
+        </select>
+      }
+    </header>
+  `,
+})
+export class TenantHeaderComponent {
+  protected tenantStore = inject(TenantStore);
+
+  switchTenant(event: Event): void {
+    const tenantId = (event.target as HTMLSelectElement).value;
+    if (this.tenantStore.switchTenant(tenantId)) {
+      // Reload tenant-specific data
+      this.loadTenantData();
+    }
+  }
+}
+```
+
+### Feature Gating
+
+```typescript
+@Component({
+  template: `
+    @if (tenantStore.isFeatureEnabled('advancedAnalytics')) {
+      <app-advanced-analytics />
+    }
+
+    @if (tenantStore.tenantPlan() === 'enterprise') {
+      <app-enterprise-features />
+    }
+  `,
+})
+export class DashboardComponent {
+  protected tenantStore = inject(TenantStore);
+}
+```
+
+### Preference Hierarchy
+
+TenantStore provides organization-level defaults that can be overridden by user preferences:
+
+```
+System Defaults → Tenant Preferences → User Preferences
+```
+
+```typescript
+// Use tenant defaults with user override
+const language = userPreference?.language ?? tenantStore.defaultLanguage();
+const theme = userPreference?.theme ?? tenantStore.defaultTheme();
+const dateFormat = userPreference?.dateFormat ?? tenantStore.defaultDateFormat();
 ```
 
 ---
